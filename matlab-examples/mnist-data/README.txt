@@ -1,0 +1,1 @@
+mnist_all.mat can be downloaded from http://cs.nyu.edu/~roweis/data.html
