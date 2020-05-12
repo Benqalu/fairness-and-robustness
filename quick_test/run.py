@@ -186,9 +186,10 @@ if __name__=='__main__':
 		for attr in attrs[data]:
 			for t in range(0,100):
 
+				print(data,attr,t)
+
 				feature_names,label_names,X_train_fair,Y_train_fair,W_train_fair,X_train,Y_train,W_train,X_test,Y_test,W_test=get_reweighed_data(dataname=data,attr=attr,ratio=0.7)
 
-				print('#'*50)
 				acc_original,acc_attack=evaluation(
 					train=(X_train,Y_train,W_train),
 					test=(X_test,Y_test,W_test),
@@ -199,7 +200,8 @@ if __name__=='__main__':
 					test=(X_test,Y_test,W_test),
 					name=(feature_names,label_names)
 				)
-				print('#'*50)
+
+				print()
 
 				f=open('result_%s_%s.txt'%(data,attr),'a')
 				f.write(str([acc_original,acc_attack,acc_original_fair,acc_attack_fair])+'\n')
