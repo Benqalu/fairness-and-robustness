@@ -182,9 +182,9 @@ if __name__=='__main__':
 	datas=['compas','german','adult']
 	attrs={'adult':['race','sex'],'compas':['race','sex'],'german':['sex','age']}
 
-	for data in datas:
-		for attr in attrs[data]:
-			for t in range(0,100):
+	for t in range(0,100):
+		for data in datas:
+			for attr in attrs[data]:
 
 				print(data,attr,t)
 
