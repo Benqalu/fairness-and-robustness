@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 from aif360.datasets import AdultDataset, GermanDataset, CompasDataset
 from aif360.algorithms.preprocessing.optim_preproc_helpers.data_preproc_functions\
         import load_preproc_data_adult, load_preproc_data_german, load_preproc_data_compas
@@ -5,11 +7,20 @@ from aif360.algorithms.preprocessing.optim_preproc_helpers.distortion_functions\
             import get_distortion_adult, get_distortion_german, get_distortion_compas
 
 from aif360.algorithms.preprocessing.reweighing import Reweighing
+from aif360.algorithms.preprocessing import DisparateImpactRemover
+from aif360.algorithms.preprocessing.optim_preproc import OptimPreproc
+from tools.opt_tools import OptTools
 
-from sklearn.ensemble import RandomForestClassifier as RFC
-# from art.classifiers.scikitlearn import ScikitlearnRandomForestClassifier as ART
-from art.classifiers.scikitlearn import ScikitlearnLogisticRegression as ART
+from sklearn.ensemble import RandomForestClassifier
+from art.classifiers.scikitlearn import ScikitlearnRandomForestClassifier as ART_RF
+
 from sklearn.linear_model import LogisticRegression
+from art.classifiers.scikitlearn import ScikitlearnLogisticRegression as ART_LR
+
+import keras
+from keras.models import Model,Sequential
+from keras.layers import Dense,Activation,Input
+from art.classifiers import KerasClassifier as ART_NN
 
 from art.attacks.evasion import ProjectedGradientDescent as ProjectedGradientDescentAttack
 
@@ -107,7 +118,7 @@ def LoadData(dataset_name,protected_attribute_name,raw=True):
 
 	return dataset_original,protected_attribute_set[protected_attribute_name][0],protected_attribute_set[protected_attribute_name][1],optim_options
 
-def get_reweighed_data(dataname='german',ratio=0.7,attr='race'):
+def get_reweighed_data(dataname='german',ratio=0.7,attr='race',transform='OP'):
 
 	dataset_orig,privileged_groups,unprivileged_groups,optim_options = LoadData(dataset_name=dataname,protected_attribute_name=attr,raw=False)
 
@@ -121,28 +132,30 @@ def get_reweighed_data(dataname='german',ratio=0.7,attr='race'):
 	Y_test=dataset_original_test.labels.reshape(-1).astype(int)
 	W_test=dataset_original_test.instance_weights.reshape(-1)
 
-	proc=Reweighing(unprivileged_groups=unprivileged_groups,privileged_groups=privileged_groups)
-	proc.fit(dataset_original_train)
-	dataset_fair_train=proc.transform(dataset_original_train)
+	# Begin pre-processing
+
+	if transform=='RW':
+		proc=Reweighing(unprivileged_groups=unprivileged_groups,privileged_groups=privileged_groups)
+		dataset_fair_train=proc.fit_transform(dataset_original_train)
+	if transform=='OP':
+		proc=OptimPreproc(OptTools,optim_options)
+		proc=proc.fit(dataset_original_train)
+		dataset_fair_train=proc.transform(dataset_original_train,transform_Y=True)
+	# End pre-processing
 
 	X_train_fair=dataset_fair_train.features.astype(int)
 	Y_train_fair=dataset_fair_train.labels.reshape(-1).astype(int)
 	W_train_fair=dataset_fair_train.instance_weights.reshape(-1)
 
+	print((X_train!=X_train_fair).sum())
+	exit()
+
 	feature_names=dataset_fair_train.feature_names
 	label_names=dataset_fair_train.label_names
 
-	# clf=RFC(n_estimators=1337,criterion='gini',max_depth=15,oob_score=True,n_jobs=-1)
-	# clf.fit(X_train,Y_train,sample_weight=W_train)
-	# pred=clf.predict(X_test)
-	# print('Accuracy_orig :',(pred==Y_test).sum()/len(pred))
-
-	# clf_fair=RFC(n_estimators=1337,criterion='gini',max_depth=15,oob_score=True,n_jobs=-1)
-	# clf_fair.fit(X_train_fair,Y_train_fair,sample_weight=W_train_fair)
-	# pred_fair=clf_fair.predict(X_test)
-	# print('Accuracy_fair :',(pred_fair==Y_test).sum()/len(pred))
-
 	return feature_names,label_names,X_train_fair,Y_train_fair,W_train_fair,X_train,Y_train,W_train,X_test,Y_test,W_test
+
+
 
 def best_acc(proba,true):
 	ret=None
@@ -159,15 +172,17 @@ def best_acc(proba,true):
 	print(thrd)
 	return pred
 
-def evaluation(train,test,name):
+def evaluation(train,test,name,model_name='LR'):
 
-	# clf=RFC(n_estimators=337,criterion='gini',max_depth=10,oob_score=True,n_jobs=-1)
-	clf=LogisticRegression()
-	art=ART(clf)
+	if model_name=='LR':
+		clf=LogisticRegression()
+		art=ART_LR(clf)
+
 	art.fit(train[0],train[1],sample_weight=train[2])
 	pred=(art.predict(test[0])[:,1]>0.5).astype(int)
 	acc_original=(pred==test[1]).sum()/len(pred)
 	print('Accuracy :',acc_original)
+
 	attack=ProjectedGradientDescentAttack(classifier=art)
 	X_test_adv=attack.generate(x=test[0])
 	pred_adv=(art.predict(X_test_adv)[:,1]>0.5).astype(int)
@@ -193,12 +208,14 @@ if __name__=='__main__':
 				acc_original,acc_attack=evaluation(
 					train=(X_train,Y_train,W_train),
 					test=(X_test,Y_test,W_test),
-					name=(feature_names,label_names)
+					name=(feature_names,label_names),
+					model_name='LR'
 				)
 				acc_original_fair,acc_attack_fair=evaluation(
 					train=(X_train_fair,Y_train_fair,W_train_fair),
 					test=(X_test,Y_test,W_test),
-					name=(feature_names,label_names)
+					name=(feature_names,label_names),
+					model_name='LR',
 				)
 
 				print()
