@@ -147,9 +147,6 @@ def get_reweighed_data(dataname='german',ratio=0.7,attr='race',transform='OP'):
 	Y_train_fair=dataset_fair_train.labels.reshape(-1).astype(int)
 	W_train_fair=dataset_fair_train.instance_weights.reshape(-1)
 
-	print((X_train!=X_train_fair).sum())
-	exit()
-
 	feature_names=dataset_fair_train.feature_names
 	label_names=dataset_fair_train.label_names
 
