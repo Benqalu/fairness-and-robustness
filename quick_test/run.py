@@ -1,4 +1,5 @@
 from copy import deepcopy
+import hashlib,random,time
 
 from aif360.datasets import AdultDataset, GermanDataset, CompasDataset
 from aif360.algorithms.preprocessing.optim_preproc_helpers.data_preproc_functions\
@@ -23,6 +24,11 @@ from keras.layers import Dense,Activation,Input
 from art.classifiers import KerasClassifier as ART_NN
 
 from art.attacks.evasion import ProjectedGradientDescent as ProjectedGradientDescentAttack
+
+def md5(s):
+	a=hashlib.md5()
+	a.update(str.encode(str(s)))
+	return a.hexdigest()
 
 def LoadData(dataset_name,protected_attribute_name,raw=True):
 
@@ -118,7 +124,7 @@ def LoadData(dataset_name,protected_attribute_name,raw=True):
 
 	return dataset_original,protected_attribute_set[protected_attribute_name][0],protected_attribute_set[protected_attribute_name][1],optim_options
 
-def get_reweighed_data(dataname='german',ratio=0.7,attr='race',transform='OP'):
+def get_fair(dataname='german',ratio=0.7,attr='race',transform='OP'):
 
 	dataset_orig,privileged_groups,unprivileged_groups,optim_options = LoadData(dataset_name=dataname,protected_attribute_name=attr,raw=False)
 
@@ -169,24 +175,41 @@ def best_acc(proba,true):
 	print(thrd)
 	return pred
 
-def evaluation(train,test,name,model_name='LR'):
+def evaluation(train,test,name,tags=None,model_name='LR',raw_result=False):
 
 	if model_name=='LR':
 		clf=LogisticRegression()
 		art=ART_LR(clf)
 
+	if raw_result:
+		outfile='test_predcition_%s_%s_%s_%s.txt'%(tags['dataset'],tags['attribute'],tags['model'],tags['fairness'])
+		outdata={}
+
 	art.fit(train[0],train[1],sample_weight=train[2])
-	pred=(art.predict(test[0])[:,1]>0.5).astype(int)
+	pred=art.predict(test[0])
+	if raw_result:
+		outdata['original']=pred.tolist()
+	pred=(pred[:,1]>0.5).astype(int)
 	acc_original=(pred==test[1]).sum()/len(pred)
 	print('Accuracy :',acc_original)
 
 	attack=ProjectedGradientDescentAttack(classifier=art)
 	X_test_adv=attack.generate(x=test[0])
-	pred_adv=(art.predict(X_test_adv)[:,1]>0.5).astype(int)
+	pred_adv=art.predict(X_test_adv)
+	if raw_result:
+		outdata['adversial']=pred_adv.tolist()
+	pred_adv=(pred_adv[:,1]>0.5).astype(int)
 	acc_attack=(pred_adv==test[1]).sum()/len(pred_adv)
 	print('Accuracy_attack :',acc_attack)
 
-	return acc_original,acc_attack
+	f=open(outfile,'w')
+	f.write(str(outdata))
+	f.close()
+
+	if not raw_result:
+		return acc_original,acc_attack
+	else:
+		pass
 
 
 if __name__=='__main__':
@@ -200,19 +223,23 @@ if __name__=='__main__':
 
 				print(data,attr,t)
 
-				feature_names,label_names,X_train_fair,Y_train_fair,W_train_fair,X_train,Y_train,W_train,X_test,Y_test,W_test=get_reweighed_data(dataname=data,attr=attr,ratio=0.7)
+				feature_names,label_names,X_train_fair,Y_train_fair,W_train_fair,X_train,Y_train,W_train,X_test,Y_test,W_test=get_fair(dataname=data,attr=attr,ratio=0.7)
 
 				acc_original,acc_attack=evaluation(
 					train=(X_train,Y_train,W_train),
 					test=(X_test,Y_test,W_test),
 					name=(feature_names,label_names),
-					model_name='LR'
+					model_name='LR',
+					tags={'dataset':data,'attribute':attr,'model':'LogisticRegression','fairness':'OP'},
+					with_fairness=False
 				)
 				acc_original_fair,acc_attack_fair=evaluation(
 					train=(X_train_fair,Y_train_fair,W_train_fair),
 					test=(X_test,Y_test,W_test),
 					name=(feature_names,label_names),
 					model_name='LR',
+					tags={'dataset':data,'attribute':attr,'model':'LogisticRegression','fairness':'OP'},
+					with_fairness=True
 				)
 
 				print()
