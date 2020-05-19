@@ -209,7 +209,7 @@ def evaluation(train,test,name,tags=None,model_name='LR',raw_result=False):
 	if not raw_result:
 		return acc_original,acc_attack
 	else:
-		pass
+		return None,None
 
 
 if __name__=='__main__':
@@ -242,8 +242,8 @@ if __name__=='__main__':
 					with_fairness=True
 				)
 
-				print()
-
-				f=open('result_%s_%s.txt'%(data,attr),'a')
-				f.write(str([acc_original,acc_attack,acc_original_fair,acc_attack_fair])+'\n')
-				f.close()
+				if acc_original!=None:
+					print()
+					f=open('result_%s_%s.txt'%(data,attr),'a')
+					f.write(str([acc_original,acc_attack,acc_original_fair,acc_attack_fair])+'\n')
+					f.close()
