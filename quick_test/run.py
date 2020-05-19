@@ -231,6 +231,7 @@ if __name__=='__main__':
 					test=(X_test,Y_test,W_test),
 					name=(feature_names,label_names),
 					model_name='LR',
+					raw_result=True,
 					tags={'dataset':data,'attribute':attr,'model':'LogisticRegression','fairness':'OP'}
 				)
 				acc_original_fair,acc_attack_fair=evaluation(
@@ -238,6 +239,7 @@ if __name__=='__main__':
 					test=(X_test,Y_test,W_test),
 					name=(feature_names,label_names),
 					model_name='LR',
+					raw_result=True,
 					tags={'dataset':data,'attribute':attr,'model':'LogisticRegression','fairness':'OP'}
 				)
 
