@@ -230,16 +230,14 @@ if __name__=='__main__':
 					test=(X_test,Y_test,W_test),
 					name=(feature_names,label_names),
 					model_name='LR',
-					tags={'dataset':data,'attribute':attr,'model':'LogisticRegression','fairness':'OP'},
-					with_fairness=False
+					tags={'dataset':data,'attribute':attr,'model':'LogisticRegression','fairness':'OP'}
 				)
 				acc_original_fair,acc_attack_fair=evaluation(
 					train=(X_train_fair,Y_train_fair,W_train_fair),
 					test=(X_test,Y_test,W_test),
 					name=(feature_names,label_names),
 					model_name='LR',
-					tags={'dataset':data,'attribute':attr,'model':'LogisticRegression','fairness':'OP'},
-					with_fairness=True
+					tags={'dataset':data,'attribute':attr,'model':'LogisticRegression','fairness':'OP'}
 				)
 
 				if acc_original!=None:
