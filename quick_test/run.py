@@ -204,7 +204,7 @@ def evaluation(train,test,name,tags=None,model_name='LR',raw_result=False):
 
 	if raw_result:
 		f=open('./raw_result/'+outfile,'w')
-		f.write(str(outdata))
+		f.write(str(outdata)+'\n')
 		f.close()
 
 	if not raw_result:
