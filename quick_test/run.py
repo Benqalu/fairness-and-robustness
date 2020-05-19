@@ -202,9 +202,10 @@ def evaluation(train,test,name,tags=None,model_name='LR',raw_result=False):
 	acc_attack=(pred_adv==test[1]).sum()/len(pred_adv)
 	print('Accuracy_attack :',acc_attack)
 
-	f=open('./raw_result/'+outfile,'w')
-	f.write(str(outdata))
-	f.close()
+	if raw_result:
+		f=open('./raw_result/'+outfile,'w')
+		f.write(str(outdata))
+		f.close()
 
 	if not raw_result:
 		return acc_original,acc_attack
