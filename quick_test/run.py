@@ -226,41 +226,47 @@ def evaluation(train,test,name,tags=None,model_name='LR',raw_result=False):
 
 if __name__=='__main__':
 
-	datas=['compas','german','adult']
-	attrs={'adult':['race','sex'],'compas':['race','sex'],'german':['sex','age']}
+	# datas=['compas','german','adult']
+	# attrs={'adult':['race','sex'],'compas':['race','sex'],'german':['sex','age']}
 
-	for t in range(0,23):
-		for data in datas:
-			for attr in attrs[data]:
+	# for t in range(0,23):
+	# 	for data in datas:
+	# 		for attr in attrs[data]:
 
-				print(data,attr,t)
+	if len(sys.argv)<3:
+		exit()
+	
+	data=sys.argv[1]
+	attr=sys.argv[2]
 
-				feature_names,label_names,X_train_fair,Y_train_fair,W_train_fair,X_train,Y_train,W_train,X_test,Y_test,W_test=get_fair(
-					dataname=data,
-					attr=attr,
-					ratio=0.7,
-					no_sensitive=True
-				)
+	print(data,attr,t)
 
-				acc_original,acc_attack=evaluation(
-					train=(X_train,Y_train,W_train),
-					test=(X_test,Y_test,W_test),
-					name=(feature_names,label_names),
-					model_name='LR',
-					raw_result=True,
-					tags={'dataset':data,'attribute':attr,'model':'LogisticRegression','fairness':'OP'}
-				)
-				acc_original_fair,acc_attack_fair=evaluation(
-					train=(X_train_fair,Y_train_fair,W_train_fair),
-					test=(X_test,Y_test,W_test),
-					name=(feature_names,label_names),
-					model_name='LR',
-					raw_result=True,
-					tags={'dataset':data,'attribute':attr,'model':'LogisticRegression','fairness':'OP'}
-				)
+	feature_names,label_names,X_train_fair,Y_train_fair,W_train_fair,X_train,Y_train,W_train,X_test,Y_test,W_test=get_fair(
+		dataname=data,
+		attr=attr,
+		ratio=0.7,
+		no_sensitive=True
+	)
 
-				if acc_original!=None:
-					print()
-					f=open('result_%s_%s%s.txt'%(data,attr,global_suffix),'a')
-					f.write(str([acc_original,acc_attack,acc_original_fair,acc_attack_fair])+'\n')
-					f.close()
+	acc_original,acc_attack=evaluation(
+		train=(X_train,Y_train,W_train),
+		test=(X_test,Y_test,W_test),
+		name=(feature_names,label_names),
+		model_name='LR',
+		raw_result=True,
+		tags={'dataset':data,'attribute':attr,'model':'LogisticRegression','fairness':'OP'}
+	)
+	acc_original_fair,acc_attack_fair=evaluation(
+		train=(X_train_fair,Y_train_fair,W_train_fair),
+		test=(X_test,Y_test,W_test),
+		name=(feature_names,label_names),
+		model_name='LR',
+		raw_result=True,
+		tags={'dataset':data,'attribute':attr,'model':'LogisticRegression','fairness':'OP'}
+	)
+
+	if acc_original!=None:
+		print()
+		f=open('result_%s_%s%s.txt'%(data,attr,global_suffix),'a')
+		f.write(str([acc_original,acc_attack,acc_original_fair,acc_attack_fair])+'\n')
+		f.close()
