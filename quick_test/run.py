@@ -239,7 +239,7 @@ if __name__=='__main__':
 	data=sys.argv[1]
 	attr=sys.argv[2]
 
-	print(data,attr,t)
+	print(data,attr)
 
 	feature_names,label_names,X_train_fair,Y_train_fair,W_train_fair,X_train,Y_train,W_train,X_test,Y_test,W_test=get_fair(
 		dataname=data,
