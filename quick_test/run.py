@@ -25,6 +25,9 @@ from art.classifiers import KerasClassifier as ART_NN
 
 from art.attacks.evasion import ProjectedGradientDescent as ProjectedGradientDescentAttack
 
+global global_suffix
+global_suffix='_nS'
+
 def md5(s):
 	a=hashlib.md5()
 	a.update(str.encode(str(s)))
@@ -124,11 +127,13 @@ def LoadData(dataset_name,protected_attribute_name,raw=True):
 
 	return dataset_original,protected_attribute_set[protected_attribute_name][0],protected_attribute_set[protected_attribute_name][1],optim_options
 
-def get_fair(dataname='german',ratio=0.7,attr='race',transform='OP'):
+def get_fair(dataname='german',ratio=0.7,attr='race',transform='OP',no_sensitive=False):
 
 	dataset_orig,privileged_groups,unprivileged_groups,optim_options = LoadData(dataset_name=dataname,protected_attribute_name=attr,raw=False)
 
-	dataset_original_train, dataset_original_test = dataset_orig.split([ratio], shuffle=True)
+	sensitive_index=dataset_orig.feature_names.index(attr)
+
+	dataset_original_train, dataset_original_test=dataset_orig.split([ratio], shuffle=True)
 
 	X_train=dataset_original_train.features.astype(int)
 	Y_train=dataset_original_train.labels.reshape(-1).astype(int)
@@ -152,6 +157,11 @@ def get_fair(dataname='german',ratio=0.7,attr='race',transform='OP'):
 	X_train_fair=dataset_fair_train.features.astype(int)
 	Y_train_fair=dataset_fair_train.labels.reshape(-1).astype(int)
 	W_train_fair=dataset_fair_train.instance_weights.reshape(-1)
+
+	if no_sensitive:
+		X_train[:,sensitive_index]=0
+		X_test[:,sensitive_index]=0
+		X_train_fair[:,sensitive_index]=0
 
 	feature_names=dataset_fair_train.feature_names
 	label_names=dataset_fair_train.label_names
@@ -182,7 +192,7 @@ def evaluation(train,test,name,tags=None,model_name='LR',raw_result=False):
 		art=ART_LR(clf)
 
 	if raw_result:
-		outfile='test_predcition_%s_%s_%s_%s.txt'%(tags['dataset'],tags['attribute'],tags['model'],tags['fairness'])
+		outfile='test_predcition_%s_%s_%s_%s%s.txt'%(tags['dataset'],tags['attribute'],tags['model'],tags['fairness'],global_suffix)
 		outdata={}
 
 	art.fit(train[0],train[1],sample_weight=train[2])
@@ -225,7 +235,12 @@ if __name__=='__main__':
 
 				print(data,attr,t)
 
-				feature_names,label_names,X_train_fair,Y_train_fair,W_train_fair,X_train,Y_train,W_train,X_test,Y_test,W_test=get_fair(dataname=data,attr=attr,ratio=0.7)
+				feature_names,label_names,X_train_fair,Y_train_fair,W_train_fair,X_train,Y_train,W_train,X_test,Y_test,W_test=get_fair(
+					dataname=data,
+					attr=attr,
+					ratio=0.7,
+					no_sensitive=True
+				)
 
 				acc_original,acc_attack=evaluation(
 					train=(X_train,Y_train,W_train),
@@ -246,6 +261,6 @@ if __name__=='__main__':
 
 				if acc_original!=None:
 					print()
-					f=open('result_%s_%s.txt'%(data,attr),'a')
+					f=open('result_%s_%s%s.txt'%(data,attr,global_suffix),'a')
 					f.write(str([acc_original,acc_attack,acc_original_fair,acc_attack_fair])+'\n')
 					f.close()
