@@ -218,11 +218,7 @@ def evaluation(train,test,name,tags=None,model_name='LR',raw_result=False):
 		f.write(str(test[1].tolist())+'\n')
 		f.close()
 
-	if not raw_result:
-		return acc_original,acc_attack
-	else:
-		return None,None
-
+	return acc_original,acc_attack
 
 if __name__=='__main__':
 
@@ -265,8 +261,6 @@ if __name__=='__main__':
 		tags={'dataset':data,'attribute':attr,'model':'LogisticRegression','fairness':'OP'}
 	)
 
-	if acc_original!=None:
-		print()
-		f=open('result_%s_%s%s.txt'%(data,attr,global_suffix),'a')
-		f.write(str([acc_original,acc_attack,acc_original_fair,acc_attack_fair])+'\n')
-		f.close()
+	f=open('result_%s_%s%s.txt'%(data,attr,global_suffix),'a')
+	f.write(str([acc_original,acc_attack,acc_original_fair,acc_attack_fair])+'\n')
+	f.close()
