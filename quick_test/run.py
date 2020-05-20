@@ -213,7 +213,7 @@ def evaluation(train,test,name,tags=None,model_name='LR',raw_result=False):
 	print('Accuracy_attack :',acc_attack)
 
 	if raw_result:
-		f=open('./raw_result/'+outfile,'w')
+		f=open('./raw_result/'+outfile,'a')
 		f.write(str(outdata)+'\n')
 		f.write(str(test[1].tolist())+'\n')
 		f.close()
