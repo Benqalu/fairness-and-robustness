@@ -15,5 +15,5 @@ for fname in fnames:
 
 	print(fname.split('.')[0][7:],end='\t')
 	for item in data.mean(axis=0):
-		print(item,end='\t')
+		print('%.4f'%item,end='\t')
 	print()

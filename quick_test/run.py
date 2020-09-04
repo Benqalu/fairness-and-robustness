@@ -18,15 +18,12 @@ from art.classifiers.scikitlearn import ScikitlearnRandomForestClassifier as ART
 from sklearn.linear_model import LogisticRegression
 from art.classifiers.scikitlearn import ScikitlearnLogisticRegression as ART_LR
 
-import keras
-from keras.models import Model,Sequential
-from keras.layers import Dense,Activation,Input
-from art.classifiers import KerasClassifier as ART_NN
+# import keras
+# from keras.models import Model,Sequential
+# from keras.layers import Dense,Activation,Input
+# from art.classifiers import KerasClassifier as ART_NN
 
 from art.attacks.evasion import ProjectedGradientDescent as ProjectedGradientDescentAttack
-
-global global_suffix
-global_suffix='_nS'
 
 def md5(s):
 	a=hashlib.md5()
@@ -122,14 +119,16 @@ def LoadData(dataset_name,protected_attribute_name,raw=True):
 	}
 
 	if optim_options==None:
-		print('No such dataset & group option:', dataset_name, protected_attribute_name)
-		exit()
+		raise ValueError(f'No such dataset & group option: {dataset_name}, {protected_attribute_name}')
 
 	return dataset_original,protected_attribute_set[protected_attribute_name][0],protected_attribute_set[protected_attribute_name][1],optim_options
 
 def get_fair(dataname='german',ratio=0.7,attr='race',transform='OP',no_sensitive=False):
 
-	dataset_orig,privileged_groups,unprivileged_groups,optim_options = LoadData(dataset_name=dataname,protected_attribute_name=attr,raw=False)
+	if transform=='OP':
+		dataset_orig,privileged_groups,unprivileged_groups,optim_options = LoadData(dataset_name=dataname,protected_attribute_name=attr,raw=False)
+	elif transform=='RW':
+		dataset_orig,privileged_groups,unprivileged_groups,optim_options = LoadData(dataset_name=dataname,protected_attribute_name=attr,raw=True)
 
 	sensitive_index=dataset_orig.feature_names.index(attr)
 
@@ -188,11 +187,11 @@ def best_acc(proba,true):
 def evaluation(train,test,name,tags=None,model_name='LR',raw_result=False):
 
 	if model_name=='LR':
-		clf=LogisticRegression()
+		clf=LogisticRegression(max_iter=1000)
 		art=ART_LR(clf)
 
 	if raw_result:
-		outfile='test_predcition_%s_%s_%s_%s%s.txt'%(tags['dataset'],tags['attribute'],tags['model'],tags['fairness'],global_suffix)
+		outfile='test_predcition_%s_%s_%s_%s_%s.txt'%(tags['dataset'],tags['attribute'],tags['model'],tags['fairness'],tags['no_sensitive'])
 		outdata={}
 
 	art.fit(train[0],train[1],sample_weight=train[2])
@@ -229,6 +228,15 @@ if __name__=='__main__':
 	# 	for data in datas:
 	# 		for attr in attrs[data]:
 
+	no_sensitive=True
+	transform='RW'
+
+	if no_sensitive:
+		sensitive_suffix='nS'
+	else:
+		sensitive_suffix=''
+
+
 	if len(sys.argv)<3:
 		exit()
 	
@@ -241,7 +249,8 @@ if __name__=='__main__':
 		dataname=data,
 		attr=attr,
 		ratio=0.7,
-		no_sensitive=True
+		transform=transform,
+		no_sensitive=no_sensitive
 	)
 
 	acc_original,acc_attack=evaluation(
@@ -250,7 +259,7 @@ if __name__=='__main__':
 		name=(feature_names,label_names),
 		model_name='LR',
 		raw_result=True,
-		tags={'dataset':data,'attribute':attr,'model':'LogisticRegression','fairness':'OP'}
+		tags={'dataset':data,'attribute':attr,'model':'LogisticRegression','fairness':transform,'no_sensitive':sensitive_suffix}
 	)
 	acc_original_fair,acc_attack_fair=evaluation(
 		train=(X_train_fair,Y_train_fair,W_train_fair),
@@ -258,9 +267,9 @@ if __name__=='__main__':
 		name=(feature_names,label_names),
 		model_name='LR',
 		raw_result=True,
-		tags={'dataset':data,'attribute':attr,'model':'LogisticRegression','fairness':'OP'}
+		tags={'dataset':data,'attribute':attr,'model':'LogisticRegression','fairness':transform,'no_sensitive':sensitive_suffix}
 	)
 
-	f=open('result_%s_%s%s.txt'%(data,attr,global_suffix),'a')
+	f=open('result_%s_%s_%s_%s.txt'%(data,attr,transform,sensitive_suffix),'a')
 	f.write(str([acc_original,acc_attack,acc_original_fair,acc_attack_fair])+'\n')
 	f.close()
