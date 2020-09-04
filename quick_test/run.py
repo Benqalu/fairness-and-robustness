@@ -1,5 +1,9 @@
 from copy import deepcopy
 import hashlib,random,time,sys
+import numpy as np
+from metric import Metric
+from copy import deepcopy
+import argparse
 
 from aif360.datasets import AdultDataset, GermanDataset, CompasDataset
 from aif360.algorithms.preprocessing.optim_preproc_helpers.data_preproc_functions\
@@ -136,14 +140,15 @@ def get_fair(dataname='german',ratio=0.7,attr='race',transform='OP',no_sensitive
 
 	X_train=dataset_original_train.features.astype(int)
 	Y_train=dataset_original_train.labels.reshape(-1).astype(int)
+	S_train=dataset_original_train.features[:,sensitive_index].reshape(-1)
 	W_train=dataset_original_train.instance_weights.reshape(-1)
 
 	X_test=dataset_original_test.features.astype(int)
 	Y_test=dataset_original_test.labels.reshape(-1).astype(int)
+	S_test=dataset_original_test.features[:,sensitive_index].reshape(-1)
 	W_test=dataset_original_test.instance_weights.reshape(-1)
 
 	# Begin pre-processing
-
 	if transform=='RW':
 		proc=Reweighing(unprivileged_groups=unprivileged_groups,privileged_groups=privileged_groups)
 		dataset_fair_train=proc.fit_transform(dataset_original_train)
@@ -155,34 +160,37 @@ def get_fair(dataname='german',ratio=0.7,attr='race',transform='OP',no_sensitive
 
 	X_train_fair=dataset_fair_train.features.astype(int)
 	Y_train_fair=dataset_fair_train.labels.reshape(-1).astype(int)
+	S_train_fair=dataset_fair_train.features[:,sensitive_index].reshape(-1)
 	W_train_fair=dataset_fair_train.instance_weights.reshape(-1)
 
 	if no_sensitive:
-		X_train[:,sensitive_index]=0
-		X_test[:,sensitive_index]=0
-		X_train_fair[:,sensitive_index]=0
+		X_train=np.delete(X_train,sensitive_index,axis=1)
+		X_test=np.delete(X_test,sensitive_index,axis=1)
+		X_train_fair=np.delete(X_train_fair,sensitive_index,axis=1)
 
 	feature_names=dataset_fair_train.feature_names
 	label_names=dataset_fair_train.label_names
 
-	return feature_names,label_names,X_train_fair,Y_train_fair,W_train_fair,X_train,Y_train,W_train,X_test,Y_test,W_test
+	train_fair={
+		'X':X_train_fair,
+		'Y':Y_train_fair,
+		'S':S_train_fair,
+		'W':W_train_fair,
+	}
+	train={
+		'X':X_train,
+		'Y':Y_train,
+		'S':S_train,
+		'W':W_train,
+	}
+	test={
+		'X':X_test,
+		'Y':Y_test,
+		'S':S_test,
+		'W':W_test,
+	}
 
-
-
-def best_acc(proba,true):
-	ret=None
-	acc=0.0
-	thrd=None
-	for i in range(1,100):
-		threshold=i*0.01
-		pred=(proba[:,1]>threshold).astype(int)
-		now=(pred==true).sum()/len(true)
-		if now>acc:
-			acc=now
-			ret=pred
-			thrd=threshold
-	print(thrd)
-	return pred
+	return feature_names,label_names,train_fair,train,test
 
 def evaluation(train,test,name,tags=None,model_name='LR',raw_result=False):
 
@@ -191,61 +199,89 @@ def evaluation(train,test,name,tags=None,model_name='LR',raw_result=False):
 		art=ART_LR(clf)
 
 	if raw_result:
-		outfile='test_predcition_%s_%s_%s_%s_%s.txt'%(tags['dataset'],tags['attribute'],tags['model'],tags['fairness'],tags['no_sensitive'])
-		outdata={}
+		raw_res_file='test_predcition_%s_%s_%s_%s_%s.txt'%(tags['dataset'],tags['attribute'],tags['model'],tags['fairness'],tags['no_sensitive'])
+		raw_res_data={'truth_train':train['Y'].tolist()}
+		raw_res_data={'truth_test':test['Y'].tolist()}
 
-	art.fit(train[0],train[1],sample_weight=train[2])
-	pred=art.predict(test[0])
-	if raw_result:
-		outdata['original']=pred.tolist()
-	pred=(pred[:,1]>0.5).astype(int)
-	acc_original=(pred==test[1]).sum()/len(pred)
-	print('Accuracy :',acc_original)
+	report={'train':{},'test':{},'train_attack':{},'test_attack':{}}
 
+
+	art.fit(train['X'],train['Y'],sample_weight=train['W'])
 	attack=ProjectedGradientDescentAttack(classifier=art)
-	X_test_adv=attack.generate(x=test[0])
+
+	# Training
+	pred=art.predict(train['X'])
+	if raw_result:
+		raw_res_data['origin_train']=pred.tolist()
+	metric=Metric(true=train['Y'],pred=pred)
+	report['train']['accuracy']=metric.accuracy()
+	report['train']['recall_disparity']=metric.recall_disparity(train['S'])
+	print('TRAIN.accuracy :',report['train']['accuracy'])
+	print('TRAIN.recall_disparity:',report['train']['recall_disparity'])
+
+	X_train_adv=attack.generate(x=train['X'])
+	pred_adv=art.predict(X_train_adv)
+	if raw_result:
+		raw_res_data['attack_train']=pred_adv.tolist()
+	metric=Metric(true=train['Y'],pred=pred_adv)
+	report['train_attack']['accuracy']=metric.accuracy()
+	report['train_attack']['recall_disparity']=metric.recall_disparity(train['S'])
+	print('TRAIN_attack.accuracy:',report['train_attack']['accuracy'])
+	print('TRAIN_attack.recall_disparity:',report['train_attack']['recall_disparity'])
+
+
+
+
+	# Testing
+	pred=art.predict(test['X'])
+	if raw_result:
+		raw_res_data['origin_test']=pred.tolist()
+	metric=Metric(true=test['Y'],pred=pred)
+	report['test']['accuracy']=metric.accuracy()
+	report['test']['recall_disparity']=metric.recall_disparity(test['S'])
+	print('TEST.accuracy :',report['test']['accuracy'])
+	print('TEST.recall_disparity:',report['test']['recall_disparity'])
+
+	X_test_adv=attack.generate(x=test['X'])
 	pred_adv=art.predict(X_test_adv)
 	if raw_result:
-		outdata['adversial']=pred_adv.tolist()
-	pred_adv=(pred_adv[:,1]>0.5).astype(int)
-	acc_attack=(pred_adv==test[1]).sum()/len(pred_adv)
-	print('Accuracy_attack :',acc_attack)
+		raw_res_data['attack_test']=pred_adv.tolist()
+	metric=Metric(true=test['Y'],pred=pred_adv)
+	report['test_attack']['accuracy']=metric.accuracy()
+	report['test_attack']['recall_disparity']=metric.recall_disparity(test['S'])
+	print('TEST_attack.accuracy:',report['test_attack']['accuracy'])
+	print('TEST_attack.recall_disparity:',report['test_attack']['recall_disparity'])
 
+	# Output
 	if raw_result:
-		f=open('./raw_result/'+outfile,'a')
-		f.write(str(outdata)+'\n')
-		f.write(str(test[1].tolist())+'\n')
+		f=open('./raw_result/'+raw_res_file,'a')
+		f.write(str(raw_res_data)+'\n')
 		f.close()
 
-	return acc_original,acc_attack
+	return report
 
 if __name__=='__main__':
 
-	# datas=['compas','german','adult']
-	# attrs={'adult':['race','sex'],'compas':['race','sex'],'german':['sex','age']}
+	parser = argparse.ArgumentParser()
+	parser.add_argument('-d', action='store', default='compas')
+	parser.add_argument('-a', action='store', default='sex')
+	parser.add_argument('-s', action='store_true')
+	parser.add_argument('-f', action='store', default='RW')
+	args = parser.parse_args()
 
-	# for t in range(0,23):
-	# 	for data in datas:
-	# 		for attr in attrs[data]:
-
-	no_sensitive=True
-	transform='RW'
+	no_sensitive=not args.s
+	transform=args.f
+	data=args.d
+	attr=args.a
 
 	if no_sensitive:
 		sensitive_suffix='nS'
 	else:
 		sensitive_suffix=''
 
+	print(vars(args))
 
-	if len(sys.argv)<3:
-		exit()
-	
-	data=sys.argv[1]
-	attr=sys.argv[2]
-
-	print(data,attr)
-
-	feature_names,label_names,X_train_fair,Y_train_fair,W_train_fair,X_train,Y_train,W_train,X_test,Y_test,W_test=get_fair(
+	feature_names,label_names,train_fair,train,test=get_fair(
 		dataname=data,
 		attr=attr,
 		ratio=0.7,
@@ -253,17 +289,21 @@ if __name__=='__main__':
 		no_sensitive=no_sensitive
 	)
 
-	acc_original,acc_attack=evaluation(
-		train=(X_train,Y_train,W_train),
-		test=(X_test,Y_test,W_test),
+	res={}
+
+	print('**********Origin**********')
+	res['origin']=evaluation(
+		train=train,
+		test=test,
 		name=(feature_names,label_names),
 		model_name='LR',
 		raw_result=True,
 		tags={'dataset':data,'attribute':attr,'model':'LogisticRegression','fairness':transform,'no_sensitive':sensitive_suffix}
 	)
-	acc_original_fair,acc_attack_fair=evaluation(
-		train=(X_train_fair,Y_train_fair,W_train_fair),
-		test=(X_test,Y_test,W_test),
+	print('**********Faired**********')
+	res['faired']=evaluation(
+		train=train_fair,
+		test=test,
 		name=(feature_names,label_names),
 		model_name='LR',
 		raw_result=True,
@@ -271,5 +311,5 @@ if __name__=='__main__':
 	)
 
 	f=open('result_%s_%s_%s_%s.txt'%(data,attr,transform,sensitive_suffix),'a')
-	f.write(str([acc_original,acc_attack,acc_original_fair,acc_attack_fair])+'\n')
+	f.write(str(res)+'\n')
 	f.close()

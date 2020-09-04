@@ -3,6 +3,7 @@ import hashlib,random,time,sys
 import numpy as np
 from metric import Metric
 from copy import deepcopy
+import argparse
 
 from aif360.datasets import AdultDataset, GermanDataset, CompasDataset
 from aif360.algorithms.preprocessing.optim_preproc_helpers.data_preproc_functions\
@@ -261,29 +262,24 @@ def evaluation(train,test,name,tags=None,model_name='LR',raw_result=False):
 
 if __name__=='__main__':
 
-	# datas=['compas','german','adult']
-	# attrs={'adult':['race','sex'],'compas':['race','sex'],'german':['sex','age']}
+	parser = argparse.ArgumentParser()
+	parser.add_argument('-d', action='store', default='compas')
+	parser.add_argument('-a', action='store', default='sex')
+	parser.add_argument('-s', action='store_true')
+	parser.add_argument('-f', action='store', default='RW')
+	args = parser.parse_args()
 
-	# for t in range(0,23):
-	# 	for data in datas:
-	# 		for attr in attrs[data]:
-
-	no_sensitive=True
-	transform='RW'
+	no_sensitive=args.s
+	transform=args.f
+	data=args.d
+	attr=args.a
 
 	if no_sensitive:
 		sensitive_suffix='nS'
 	else:
 		sensitive_suffix=''
 
-
-	if len(sys.argv)<3:
-		exit()
-	
-	data=sys.argv[1]
-	attr=sys.argv[2]
-
-	print(data,attr,transform)
+	print(vars(args))
 
 	feature_names,label_names,train_fair,train,test=get_fair(
 		dataname=data,
