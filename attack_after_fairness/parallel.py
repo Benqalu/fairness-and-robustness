@@ -1,9 +1,9 @@
-import subprocess, time, random, os
+import subprocess, time, random, os, multiprocessing
 
 
 class Parallel(object):
 	def __init__(self, p=1):
-		self.max_cores = 32
+		self.max_cores = multiprocessing.cpu_count()
 		self.p = int(min(p, self.max_cores))
 		self.slots = [None for i in range(p)]
 		self.command = [None for i in range(p)]
