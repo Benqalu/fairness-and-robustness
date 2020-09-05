@@ -30,7 +30,7 @@ class Parallel(object):
 								stderr=subprocess.PIPE,
 								shell=shell,
 							)
-						sleep(0.01)
+						time.sleep(0.01)
 						running += 1
 				else:
 					ret = self.slots[i].poll()
