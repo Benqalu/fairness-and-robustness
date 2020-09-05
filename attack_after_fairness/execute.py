@@ -18,15 +18,16 @@ if args.p!=-1:
 	print(f'Parallel computing with {args.p} threads...')
 
 	if 1==1:
-		combs=[]
+		pool=Pool(args.p)
 		for t in range(0,23):
+			combs=[]
 			for sens in ['','-s']:
 				for data in datas:
 					for attr in attrs[data]:
 							for tran in ['RW','OP']:
 								combs.append('python run.py -d %s -a %s -f %s %s'%(data,attr,tran,sens))
-		pool=Pool(args.p)
-		pool.map(exec,combs)
+			
+			pool.map(exec,combs)
 		pool.join()
 	else:
 		pool=Parallel(p=args.p)
