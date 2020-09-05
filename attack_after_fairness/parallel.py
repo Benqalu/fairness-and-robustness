@@ -1,9 +1,9 @@
-import subprocess, time, multiprocessing, random, os
+import subprocess, time, random, os
 
 
 class Parallel(object):
 	def __init__(self, p=1):
-		self.max_cores = multiprocessing.cpu_count()
+		self.max_cores = 32
 		self.p = int(min(p, self.max_cores))
 		self.slots = [None for i in range(p)]
 		self.command = [None for i in range(p)]
@@ -40,9 +40,8 @@ class Parallel(object):
 						ready = list(set(range(0, self.max_cores)) - set(self.cores))
 						index = random.choice(ready)
 						self.cores[i] = index
-						proc_string = "0x" + "1" + "0" * index
-						print(f"taskset -p {proc_string} {self.slots[i].pid}")
-						os.system(f"taskset -p {proc_string} {self.slots[i].pid}")
+						print(f"taskset -cp {index} {self.slots[i].pid}")
+						os.system(f"taskset -cp {index} {self.slots[i].pid}")
 				else:
 					ret = self.slots[i].poll()
 					if ret is not None:
