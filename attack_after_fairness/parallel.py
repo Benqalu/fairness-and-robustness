@@ -33,7 +33,6 @@ class Parallel(object):
 						running += 1
 				else:
 					ret = self.slots[i].poll()
-					print(f"slot {i}, ret = {ret}")
 					if ret is not None:
 						if ret != 0:
 							print(f"Error {ret} with command {cmd}")
