@@ -13,7 +13,7 @@ class Parallel(object):
 		else:
 			self.queue.append(cmd)
 
-	def run(self, sleep=1.0, info=True):
+	def run(self, sleep=1.0, info=True, shell=False):
 		running = 0
 		while True:
 			for i in range(self.p):
@@ -22,15 +22,18 @@ class Parallel(object):
 						cmd = self.queue.pop(0)
 						print("Running:", cmd)
 						if info:
-							self.slots[i] = subprocess.Popen(cmd)
+							self.slots[i] = subprocess.Popen(cmd, shell=shell)
 						else:
 							self.slots[i] = subprocess.Popen(
-								cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+								cmd,
+								stdout=subprocess.PIPE,
+								stderr=subprocess.PIPE,
+								shell=shell,
 							)
 						running += 1
 				else:
 					ret = self.slots[i].poll()
-					print(f'slot {i}, ret = {ret}')
+					print(f"slot {i}, ret = {ret}")
 					if ret is not None:
 						if ret != 0:
 							print(f"Error {ret} with command {cmd}")
@@ -42,7 +45,7 @@ class Parallel(object):
 									self.slots[j].kill()
 							return
 						else:
-							self.slots[i]=None
+							self.slots[i] = None
 							running -= 1
 			if running == 0:
 				break

@@ -27,7 +27,7 @@ if args.p!=-1:
 	print(f'Parallel computing with {args.p} threads...')
 	pool=Parallel(p=args.p)
 	pool.add_cmd(combs)
-	pool.run()
+	pool.run(info=True, shell=True)
 else:
 	for item in combs:
 		subprocess.call(item)
