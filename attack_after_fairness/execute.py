@@ -40,7 +40,7 @@ if args.p!=-1:
 								cmd='python run.py -d %s -a %s -f %s %s'%(data,attr,tran,sens)
 								combs.append(cmd.strip().split(' '))
 			pool.add_cmd(combs)
-			pool.run(info=True, shell=False)
+			pool.run(info=False, shell=False, assign_proc=True)
 else:
 	for item in combs:
 		subprocess.call(item)

@@ -3,11 +3,11 @@ import subprocess, time, multiprocessing, random, os
 
 class Parallel(object):
 	def __init__(self, p=1):
-		self.max_cores=multiprocessing.cpu_count()
-		self.p = int(min(p,self.max_cores))
+		self.max_cores = multiprocessing.cpu_count()
+		self.p = int(min(p, self.max_cores))
 		self.slots = [None for i in range(p)]
 		self.command = [None for i in range(p)]
-		self.cores=[None for i in range(p)]
+		self.cores = [None for i in range(p)]
 		self.queue = []
 
 	def add_cmd(self, cmd):
@@ -37,12 +37,12 @@ class Parallel(object):
 						time.sleep(0.01)
 						running += 1
 
-						ready=list(set(range(0,self.max_cores))-set(self.cores))
-						index=random.choice(ready)
-						self.cores[i]=index
-						proc_string='0x'+'1'+'0'*index
-						os.system(f'taskset -p {proc_string} {self.slots[i].pid}')
-						
+						ready = list(set(range(0, self.max_cores)) - set(self.cores))
+						index = random.choice(ready)
+						self.cores[i] = index
+						proc_string = "0x" + "1" + "0" * index
+						os.system(f"taskset -p {proc_string} {self.slots[i].pid}")
+
 				else:
 					ret = self.slots[i].poll()
 					if ret is not None:
