@@ -12,13 +12,12 @@ args = parser.parse_args()
 
 def exec(cmd):
 	print("Running:", cmd)
-	os.system(cmd)
-	# subprocess.run(cmd.strip().split(' '), capture_output=False)
+	# os.system(cmd)
+	subprocess.run(cmd.strip().split(' '), capture_output=False)
 
 if args.p!=-1:
 	print(f'Parallel computing with {args.p} threads...')
-
-	if 1==1:
+	if 1==2:
 		pool=Pool(args.p)
 		for t in range(0,23):
 			combs=[]

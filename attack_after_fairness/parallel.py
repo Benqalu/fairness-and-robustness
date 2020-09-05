@@ -13,7 +13,7 @@ class Parallel(object):
 		else:
 			self.queue.append(cmd)
 
-	def run(self, sleep=1.0, info=True, shell=False):
+	def run(self, sleep=0.1, info=True, shell=False):
 		running = 0
 		while True:
 			for i in range(self.p):
@@ -30,6 +30,7 @@ class Parallel(object):
 								stderr=subprocess.PIPE,
 								shell=shell,
 							)
+						sleep(0.01)
 						running += 1
 				else:
 					ret = self.slots[i].poll()
