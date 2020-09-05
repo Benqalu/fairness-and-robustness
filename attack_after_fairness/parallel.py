@@ -5,6 +5,7 @@ class Parallel(object):
 	def __init__(self, p=1):
 		self.p = p
 		self.slots = [None for i in range(p)]
+		self.command = [None for i in range(p)]
 		self.queue = []
 
 	def add_cmd(self, cmd):
@@ -20,6 +21,7 @@ class Parallel(object):
 				if self.slots[i] is None:
 					if self.queue:
 						cmd = self.queue.pop(0)
+						self.command[i] = cmd
 						print("Running:", cmd)
 						if info:
 							self.slots[i] = subprocess.Popen(cmd, shell=shell)
@@ -45,6 +47,8 @@ class Parallel(object):
 									self.slots[j].kill()
 							return
 						else:
+							print("Exited:", self.command[i])
+							self.command[i] = None
 							self.slots[i] = None
 							running -= 1
 			if running == 0:

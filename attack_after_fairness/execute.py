@@ -37,9 +37,10 @@ if args.p!=-1:
 				for data in datas:
 					for attr in attrs[data]:
 							for tran in ['RW','OP']:
-								combs.append('python run.py -d %s -a %s -f %s %s'%(data,attr,tran,sens))
+								cmd='python run.py -d %s -a %s -f %s %s'%(data,attr,tran,sens)
+								combs.append(cmd.strip().split(' '))
 			pool.add_cmd(combs)
-			pool.run(info=True, shell=True)
+			pool.run(info=True, shell=False)
 else:
 	for item in combs:
 		subprocess.call(item)
