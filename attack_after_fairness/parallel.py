@@ -24,7 +24,7 @@ class Parallel(object):
 					if self.queue:
 						cmd = self.queue.pop(0)
 						self.command[i] = cmd
-						print(">>>Running:", cmd)
+						print(">>> Running:", cmd)
 						if info:
 							self.slots[i] = subprocess.Popen(cmd, shell=shell)
 						else:
@@ -54,7 +54,7 @@ class Parallel(object):
 									self.slots[j].kill()
 							return
 						else:
-							print("<<<Exited:", self.command[i])
+							print("<<< Exited:", self.command[i])
 							self.command[i] = None
 							self.slots[i] = None
 							self.cores[i] = None
