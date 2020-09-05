@@ -40,7 +40,6 @@ class Parallel(object):
 						ready = list(set(range(0, self.max_cores)) - set(self.cores))
 						index = random.choice(ready)
 						self.cores[i] = index
-						print(f"taskset -cp {index} {self.slots[i].pid}")
 						os.system(f"taskset -cp {index} {self.slots[i].pid}")
 				else:
 					ret = self.slots[i].poll()
