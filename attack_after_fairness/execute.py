@@ -3,7 +3,7 @@ from time import sleep
 from multiprocessing import Pool
 from parallel import Parallel
 
-datas=['compas']#,'german','adult']
+datas=['compas','german','adult']
 attrs={'adult':['race','sex'],'compas':['race','sex'],'german':['sex','age']}
 
 parser = argparse.ArgumentParser()
@@ -15,7 +15,7 @@ for t in range(0,23):
 	for sens in ['','-s']:
 		for data in datas:
 			for attr in attrs[data]:
-					for tran in ['RW']:#,'OP']:
+					for tran in ['RW','OP']:
 						combs.append('python run.py -d %s -a %s -f %s %s'%(data,attr,tran,sens))
 
 def exec(args):
