@@ -12,7 +12,8 @@ args = parser.parse_args()
 
 def exec(cmd):
 	print("Running:", cmd)
-	subprocess.run(cmd.strip().split(' '), capture_output=False)
+	os.system(cmd)
+	# subprocess.run(cmd.strip().split(' '), capture_output=False)
 
 if args.p!=-1:
 	print(f'Parallel computing with {args.p} threads...')
