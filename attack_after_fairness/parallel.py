@@ -41,8 +41,8 @@ class Parallel(object):
 						index = random.choice(ready)
 						self.cores[i] = index
 						proc_string = "0x" + "1" + "0" * index
+						print(f"taskset -p {proc_string} {self.slots[i].pid}")
 						os.system(f"taskset -p {proc_string} {self.slots[i].pid}")
-
 				else:
 					ret = self.slots[i].poll()
 					if ret is not None:
@@ -59,6 +59,7 @@ class Parallel(object):
 							print("Exited:", self.command[i])
 							self.command[i] = None
 							self.slots[i] = None
+							self.cores[i] = None
 							running -= 1
 			if running == 0:
 				break
