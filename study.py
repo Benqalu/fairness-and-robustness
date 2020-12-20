@@ -168,7 +168,15 @@ def main(data='adult',attr='sex'):
 
 
 if __name__=='__main__':
-	main('adult','sex')
+	import sys
+	if len(sys.argv)>=3:
+		data=sys.argv[1]
+		attr=sys.argv[2]
+	else:
+		data='adult'
+		attr='sex'
+	print(data,attr)
+	main(data,attr)
 
 
 
