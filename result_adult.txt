@@ -1,0 +1,18 @@
+****** Original dataset ******
+Testing acc. : 0.7868
+Testing disp.: 0.0665
+Attacked acc. : 0.5835
+Attacked disp.: 0.0480
+Def testing acc. : 0.7868
+Def testing disp.: 0.0665
+Def attacked acc. : 0.2749
+Def attacked disp.: 0.0288
+****** Fairness-mitigated dataset ******
+Testing acc. : 0.7336
+Testing disp.: 0.0080
+Attacked acc. : 0.5656
+Attacked disp.: 0.0245
+Def testing acc. : 0.7267
+Def testing disp.: 0.0467
+Def attacked acc. : 0.2844
+Def attacked disp.: 0.0465
