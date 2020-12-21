@@ -77,30 +77,22 @@ def lrc(data='adult',attr='sex'):
 			print(model.linear_model.weight.grad)
 
 def loss_fair(X,w):
-	u_down=(1.0-X[:,0]).sum()
-	v_down=X[:,0].sum()
-	u_up=torch.tensor(0.0)
-	v_up=torch.tensor(0.0)
-	for i in range(0,X.shape[0]):
-		u_up=u_up+torch.sigmoid(torch.matmul(X[i],w))*(1.0-X[i,0])
-		v_up+=torch.sigmoid(torch.matmul(X[i],w))*X[i,0]
+	u_down=torch.sum(1.0-X[:,0])
+	u_up=torch.sum(torch.sigmoid(torch.matmul(X,w))*(1.0-X[:,0]))
+	v_down=torch.sum(X[:,0])
+	v_up=torch.sum(torch.sigmoid(torch.matmul(X,w))*X[:,0])
 	loss=torch.square((u_up/u_down)-(v_up/v_down))
 	return loss
 
 def loss_robust_offset(X,y,w):
-	loss=torch.tensor(0.0)
-	for i in range(0, X.shape[0]):
-		gradx=(y[i][0]-torch.sigmoid(torch.matmul(X[i],w)))*w
-		loss+=torch.sum(torch.square(gradx))
-	return loss/X.shape[0]
+	gradx=(y.reshape(-1)-torch.sigmoid(torch.matmul(X,w))).reshape(-1,1)*w
+	loss=torch.mean(torch.sum(torch.square(gradx),axis=1))
+	return loss
 
 def loss_robust_switch(X,y,w,eps=0.1):
-	loss=torch.tensor(0.0)
-	for i in range(0, X.shape[0]):
-		gradx=eps*(y[i][0]-torch.sigmoid(torch.matmul(X[i],w)))*w
-		loss+=torch.sigmoid(torch.matmul(X[i]+gradx,w)*torch.matmul(X[i],w))
-	return -loss/X.shape[0]
-
+	gradx=eps*(y.reshape(-1)-torch.sigmoid(torch.matmul(X,w))).reshape(-1,1)*w
+	loss=torch.mean(torch.sigmoid(torch.matmul(X+gradx,w))*torch.matmul(X,w))
+	return -loss
 
 def main(data='adult',attr='sex'):
 
