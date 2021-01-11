@@ -1,4 +1,5 @@
 import torch
+import tqdm
 import numpy as np
 from math import exp
 import warnings
@@ -6,6 +7,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 from aif360.algorithms.preprocessing.optim_preproc_helpers.data_preproc_functions\
 	import load_preproc_data_adult, load_preproc_data_german, load_preproc_data_compas
 from metric import Metric
+from utils import getdata
 
 class LogisticRegression(torch.nn.Module):
 	def __init__(self, input_dim):
@@ -26,62 +28,12 @@ def get_angle(v1,v2):
 	degree=(angle/np.pi)*180
 	return degree
 
-def getdata(data,attr):
-	data_funcs={
-		'adult': load_preproc_data_adult,
-		'german': load_preproc_data_german,
-		'compas': load_preproc_data_compas
-	}
-	metadata=data_funcs[data]()
-
-	X=metadata.features
-	s=X[:,metadata.feature_names.index(attr)].reshape(-1)
-	y=metadata.labels.reshape(-1)
-	X=np.delete(X,metadata.feature_names.index(attr),axis=1)
-	X=np.hstack([s.reshape(-1,1),X])
-	return X,y.reshape(-1,1)
-
-def lrc(data='adult',attr='sex'):
-
-	X,y=getdata(data,attr)
-	print(X.shape)
-
-	X=torch.tensor(X).float()
-	y=torch.tensor(y).float()
-
-	model = LogisticRegression(input_dim=X.shape[1])
-	optim = torch.optim.Adam(model.parameters(), lr=1E-4)
-	loss_func=torch.nn.BCELoss()
-
-	indices=list(range(0,X.shape[0]))
-	
-	n_epoch=10000
-	batch_size=128
-	for epoch in range(0, n_epoch):
-
-		# if batch_size is not None:
-		# 	idx=np.random.choice(indices, size=batch_size, replace=False).tolist()
-		# 	batch_X=X[idx,:]
-		# 	batch_y=y[idx,:]
-		# else:	
-
-		optim.zero_grad()
-		y_pred=model(X)
-		loss=loss_func(y_pred, y)
-		loss.backward()
-		optim.step()
-
-		if epoch%10==0:
-			metric=Metric(pred=y_pred.tolist(), true=y.tolist())
-			print('Acc. =', metric.accuracy())
-			print(model.linear_model.weight.grad)
-
 def loss_fair(X,w):
 	u_down=torch.sum(1.0-X[:,0])
 	u_up=torch.sum(torch.sigmoid(torch.matmul(X,w))*(1.0-X[:,0]))
 	v_down=torch.sum(X[:,0])
 	v_up=torch.sum(torch.sigmoid(torch.matmul(X,w))*X[:,0])
-	loss=torch.square((u_up/u_down)-(v_up/v_down))
+	loss=torch.abs((u_up/u_down)-(v_up/v_down))
 	return loss
 
 def loss_robust_offset(X,y,w):
@@ -91,8 +43,8 @@ def loss_robust_offset(X,y,w):
 
 def loss_robust_switch(X,y,w,eps=0.1):
 	gradx=eps*(y.reshape(-1)-torch.sigmoid(torch.matmul(X,w))).reshape(-1,1)*w
-	loss=torch.mean(torch.sigmoid(torch.matmul(X+gradx,w))*torch.matmul(X,w))
-	return -loss
+	loss=torch.mean(1.0-torch.sigmoid(torch.matmul(X+gradx,w))*torch.matmul(X,w))
+	return loss
 
 def main(data='adult',attr='sex'):
 
@@ -100,7 +52,10 @@ def main(data='adult',attr='sex'):
 	X=torch.tensor(X, requires_grad=False).float()
 	y=torch.tensor(y, requires_grad=False).float()
 
-	for i in range(0,5):
+	all_angles=[]
+	all_grads=[]
+
+	for i in tqdm.tqdm(range(0,10000)):
 		w=torch.tensor(np.random.uniform(-1,1,X.shape[1]).tolist(), requires_grad=True)
 
 		angles=[]
@@ -115,11 +70,10 @@ def main(data='adult',attr='sex'):
 		lossr=loss_robust_offset(X,y,w)
 		lossr.backward()
 		gradr=np.array(w.grad.tolist())
-
 		angle=get_angle(gradf,gradr)
 		angles.append(angle)
 		grads.append(gradr.tolist())
-		print(angle, end=' ')
+		# print(angle, end=' ')
 
 		w.grad=None
 		lossr=loss_robust_switch(X,y,w,eps=0.0)
@@ -128,7 +82,7 @@ def main(data='adult',attr='sex'):
 		angle=get_angle(gradf,gradr)
 		angles.append(angle)
 		grads.append(gradr.tolist())
-		print(angle, end=' ')
+		# print(angle, end=' ')
 
 		w.grad=None
 		lossr=loss_robust_switch(X,y,w,eps=0.1)
@@ -137,7 +91,7 @@ def main(data='adult',attr='sex'):
 		angle=get_angle(gradf,gradr)
 		angles.append(angle)
 		grads.append(gradr.tolist())
-		print(angle, end=' ')
+		# print(angle, end=' ')
 
 		w.grad=None
 		lossr=loss_robust_switch(X,y,w,eps=0.2)
@@ -146,17 +100,23 @@ def main(data='adult',attr='sex'):
 		angle=get_angle(gradf,gradr)
 		angles.append(angle)
 		grads.append(gradr.tolist())
-		print(angle, end=' ')
+		# print(angle, end=' ')
 
-		print()
+		# print()s
 
-		f=open('./result/gradient/angles_%s_%s.txt'%(data,attr),'a')
-		f.write(str(angles)+'\n')
-		f.close()
+		all_angles.append(angles)
+		all_grads.append(grads)
 
-		f=open('./result/gradient/grads_%s_%s.txt'%(data,attr),'a')
-		f.write(str(grads)+'\n')
-		f.close()
+
+	f=open('./result/gradient/angles_%s_%s.txt'%(data,attr),'w')
+	for i in range(0, 10000):
+		f.write(str(all_angles[i])+'\n')
+	f.close()
+
+	f=open('./result/gradient/grads_%s_%s.txt'%(data,attr),'w')
+	for i in range(0, 10000):
+		f.write(str(all_grads[i])+'\n')
+	f.close()
 
 
 if __name__=='__main__':
@@ -167,8 +127,11 @@ if __name__=='__main__':
 	else:
 		data='adult'
 		attr='sex'
-	print(data,attr)
-	main(data,attr)
+
+	for data in ['adult','compas','hospital']:
+		for attr in ['sex','race']:
+			print(data,attr)
+			main(data,attr)
 
 
 
