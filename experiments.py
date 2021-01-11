@@ -80,7 +80,7 @@ if __name__=='__main__':
 		for attr in ['sex', 'race']:
 			for alpha in [0.0, 0.1, 0.2, 0.3]:
 				for beta in [0.0, 0.01, 0.02, 0.03]:
-					exp=Experiments('adult','sex',alpha=alpha,beta=beta,n_epoch=3000,bias=True)
+					exp=Experiments(data,attr,alpha=alpha,beta=beta,n_epoch=3000,bias=True)
 					exp.exec()
 					del exp
 					sleep(10)
