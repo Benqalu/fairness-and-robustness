@@ -46,7 +46,7 @@ class Experiments(object):
 
 	def exec(self,n_epoch=3000):
 		X,y=get_data(self._data,self._attr)
-		model = FaroLR(fairness=self._alpha, robustness=self._beta, lr=1E-3, n_epoch=n_epoch, bias=self._bias, report=['weight','accuracy','disparity'])
+		model = FaroLR(fairness=self._alpha, robustness=self._beta, lr=1E-3, n_epoch=n_epoch, bias=self._bias, report=['weight','accuracy','disparity'], seed=24)
 		model.fit(X,y)
 		model.eval_attack(X,y)
 
@@ -68,6 +68,7 @@ class Experiments(object):
 			v2=self.grad_robustness(w[i])
 			angle.append(self.calc_angle(v1,v2))
 
+		plt.clf()
 		plt.xlabel('n_epoch')
 		plt.ylabel('Angle (rad)')
 		plt.title(f'{self._data}_{self._attr}')
