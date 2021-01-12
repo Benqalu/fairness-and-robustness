@@ -73,7 +73,7 @@ class Experiments(object):
 		plt.ylabel('Angle (rad)')
 		plt.title(f'{self._data}_{self._attr}')
 		plt.plot(epoch,angle)
-		plt.savefig(f'./result/logistic_regression/angle_{self._data}_{self._attr}_{self._timestamp}.pdf')
+		plt.savefig(f'./result/logistic_regression/angle_{self._data}_{self._attr}_f{"%03d"%int(self._alpha*100)}_r{"%03d"%int(self._beta*100)}_ep{self._n_epoch}_{self._timestamp}.pdf')
 		# plt.show()
 
 if __name__=='__main__':
