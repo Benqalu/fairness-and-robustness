@@ -48,7 +48,8 @@ class Experiments(object):
 		loss.backward()
 		return np.array(w.grad.reshape(-1).tolist())
 
-	def exec(self,n_epoch=3000):
+	def exec(self):
+		n_epoch=self._n_epoch
 		X,y=get_data(self._data,self._attr)
 		if self._prefix=='lr_positive_disp':
 			model = FaroLR(fairness=self._alpha, robustness=self._beta, lr=1E-3, n_epoch=n_epoch, bias=self._bias, report=['weight','accuracy','disparity'], tp_fairness=False, seed=24)
@@ -74,9 +75,6 @@ class Experiments(object):
 			v1=self.grad_fairness(w[i])
 			v2=self.grad_robustness(w[i])
 			angle.append(self.calc_angle(v1,v2))
-			print(angle[-1])
-
-		exit()
 
 		plt.clf()
 		plt.xlabel('n_epoch')
@@ -90,7 +88,7 @@ if __name__=='__main__':
 	for data in ['adult', 'compas', 'hospital']:
 		for attr in ['sex', 'race']:
 			for alpha in [0.00, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30]:
-				for beta in [0.01, 0.01, 0.02, 0.03]:
+				for beta in [0.00, 0.01, 0.01, 0.02, 0.03]:
 					print((data, attr, alpha, beta))
 					exp=Experiments(data,attr,alpha=alpha,beta=beta,n_epoch=3000,bias=True, prefix='lr_truepos_disp')
 					exp.exec()

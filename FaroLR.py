@@ -23,8 +23,7 @@ def loss_fairness(X, y, w, tp=False):
 
 def loss_robustness(X, y, w):
 	gradx = (y.reshape(-1) - torch.sigmoid(torch.matmul(X, w))).reshape(-1, 1) * w
-	loss = torch.me
-	an(torch.sum(torch.abs(gradx), axis=1))
+	loss = torch.mean(torch.sum(torch.abs(gradx), axis=1))
 	return loss
 
 
