@@ -7,7 +7,7 @@ from FaroLR import FaroLR, loss_fairness, loss_robustness
 from matplotlib import pyplot as plt
 
 class Experiments(object):
-	def __init__(self,data,attr,alpha=0.0,beta=0.0,n_epoch=3000,bias=True):
+	def __init__(self,data,attr,prefix='lr_positive_disp',alpha=0.0,beta=0.0,n_epoch=3000,bias=True):
 		X,y=get_data(data,attr)
 		if bias:
 			X=np.hstack([X,np.ones(X.shape[0]).reshape(-1,1)])
@@ -20,6 +20,7 @@ class Experiments(object):
 		self._n_epoch=n_epoch
 		self._data=data
 		self._attr=attr
+		self._prefix=prefix
 
 	def calc_angle(self,v1,v2,rad=False):
 		u1=v1/np.linalg.norm(v1)
@@ -40,13 +41,19 @@ class Experiments(object):
 
 	def grad_fairness(self,w):
 		w=torch.tensor(w,dtype=torch.float32,requires_grad=True)
-		loss=loss_fairness(self._X,w)
+		if self._prefix=='lr_positive_disp':
+			loss=loss_fairness(self._X,self._y,w,tp=False)
+		elif self._prefix=='lr_truepos_disp':
+			loss=loss_fairness(self._X,self._y,w,tp=True)
 		loss.backward()
 		return np.array(w.grad.reshape(-1).tolist())
 
 	def exec(self,n_epoch=3000):
 		X,y=get_data(self._data,self._attr)
-		model = FaroLR(fairness=self._alpha, robustness=self._beta, lr=1E-3, n_epoch=n_epoch, bias=self._bias, report=['weight','accuracy','disparity'], seed=24)
+		if self._prefix=='lr_positive_disp':
+			model = FaroLR(fairness=self._alpha, robustness=self._beta, lr=1E-3, n_epoch=n_epoch, bias=self._bias, report=['weight','accuracy','disparity'], tp_fairness=False, seed=24)
+		elif self._prefix=='lr_truepos_disp':
+			model = FaroLR(fairness=self._alpha, robustness=self._beta, lr=1E-3, n_epoch=n_epoch, bias=self._bias, report=['weight','accuracy','disparity'], tp_fairness=True, seed=24)
 		model.fit(X,y)
 		model.eval_attack(X,y)
 
@@ -55,7 +62,7 @@ class Experiments(object):
 
 		w=model._report['weight']
 
-		f=open(f'./result/logistic_regression/report_{self._data}_{self._attr}_f{"%03d"%int(self._alpha*100)}_r{"%03d"%int(self._beta*100)}_ep{self._n_epoch}_{self._timestamp}.txt','w')
+		f=open(f'./result/{self._prefix}/report_{self._data}_{self._attr}_f{"%03d"%int(self._alpha*100)}_r{"%03d"%int(self._beta*100)}_ep{self._n_epoch}_{self._timestamp}.txt','w')
 		f.write(str(model._report))
 		f.close()
 
@@ -76,15 +83,16 @@ class Experiments(object):
 		plt.ylabel('Angle (rad)')
 		plt.title(f'{self._data}_{self._attr}')
 		plt.plot(epoch,angle)
-		plt.savefig(f'./result/logistic_regression/angle_{self._data}_{self._attr}_f{"%03d"%int(self._alpha*100)}_r{"%03d"%int(self._beta*100)}_ep{self._n_epoch}_{self._timestamp}.pdf')
+		plt.savefig(f'./result/{self._prefix}/angle_{self._data}_{self._attr}_f{"%03d"%int(self._alpha*100)}_r{"%03d"%int(self._beta*100)}_ep{self._n_epoch}_{self._timestamp}.pdf')
 		# plt.show()
 
 if __name__=='__main__':
 	for data in ['adult', 'compas', 'hospital']:
 		for attr in ['sex', 'race']:
-			for alpha in [0.0, 0.1, 0.2, 0.3]:
+			for alpha in [0.00, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30]:
 				for beta in [0.01, 0.01, 0.02, 0.03]:
-					exp=Experiments(data,attr,alpha=alpha,beta=beta,n_epoch=3000,bias=True)
+					print((data, attr, alpha, beta))
+					exp=Experiments(data,attr,alpha=alpha,beta=beta,n_epoch=3000,bias=True, prefix='lr_truepos_disp')
 					exp.exec()
 					del exp
 					sleep(10)

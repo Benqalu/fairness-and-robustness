@@ -5,17 +5,26 @@ from copy import deepcopy
 from metric import Metric
 
 
-def loss_fairness(X, w):
-	u_down = torch.sum(1.0 - X[:, 0])
-	u_up = torch.sum(torch.sigmoid(torch.matmul(X, w)) * (1.0 - X[:, 0]))
-	v_down = torch.sum(X[:, 0])
-	v_up = torch.sum(torch.sigmoid(torch.matmul(X, w)) * X[:, 0])
-	loss = torch.abs((u_up / u_down) - (v_up / v_down))
+def loss_fairness(X, y, w, tp=False):
+	if not tp:
+		u_down = torch.sum(1.0 - X[:, 0])
+		u_up = torch.sum(torch.sigmoid(torch.matmul(X, w)) * (1.0 - X[:, 0]))
+		v_down = torch.sum(X[:, 0])
+		v_up = torch.sum(torch.sigmoid(torch.matmul(X, w)) * X[:, 0])
+		loss = torch.abs((u_up / u_down) - (v_up / v_down))
+	else:
+		y_flat=y.reshape(-1)
+		u_down = torch.sum((1.0 - X[:, 0]) * y_flat)
+		u_up = torch.sum(torch.sigmoid(torch.matmul(X, w)) * (1.0 - X[:, 0]) * y_flat)
+		v_down = torch.sum(X[:, 0] * y_flat)
+		v_up = torch.sum(torch.sigmoid(torch.matmul(X, w)) * X[:, 0] * y_flat)
+		loss = torch.abs((u_up / u_down) - (v_up / v_down))
 	return loss
 
 def loss_robustness(X, y, w):
 	gradx = (y.reshape(-1) - torch.sigmoid(torch.matmul(X, w))).reshape(-1, 1) * w
-	loss = torch.mean(torch.sum(torch.abs(gradx), axis=1))
+	loss = torch.me
+	an(torch.sum(torch.abs(gradx), axis=1))
 	return loss
 
 
@@ -41,7 +50,7 @@ class LogisticRegressionCore(torch.nn.Module):
 
 class FaroLR(object):
 	def __init__(
-		self, lr=0.01, n_epoch=1000, bias=True, fairness=0.0, robustness=0.0, report=[], seed=None
+		self, lr=0.01, n_epoch=1000, bias=True, fairness=0.0, robustness=0.0, tp_fairness=False, report=[], seed=None
 	):
 		self._lr = lr
 		self._n_epoch = n_epoch
@@ -51,6 +60,7 @@ class FaroLR(object):
 		self._robustness = robustness
 		self._seed = seed
 		self._report = {}
+		self._tp_fairness=tp_fairness
 		for item in report:
 			self._report[item]=[]
 
@@ -74,7 +84,7 @@ class FaroLR(object):
 			loss = loss_main(y_pred, y)
 			if self._fairness is not None and self._fairness != 0.0:
 				loss += self._fairness * loss_fairness(
-					X, self._model.linear_model.weight.reshape(-1)
+					X, y, self._model.linear_model.weight.reshape(-1), tp=self._tp_fairness
 				)
 			if self._robustness is not None and self._robustness != 0.0:
 				# loss+=self._robustness*loss_robustness_switch(X,y,self._model.linear_model.weight.reshape(-1),eps=0.1)
@@ -87,7 +97,10 @@ class FaroLR(object):
 			if epoch % 10 == 0:
 				metric = Metric(true=y.tolist(), pred=y_pred.tolist())
 				acc = metric.accuracy()
-				disp = metric.positive_disparity(s=s)
+				if not self._tp_fairness:
+					disp = metric.positive_disparity(s=s)
+				else:
+					disp = metric.recall_disparity(s=s)
 				print("epoch=%d, Acc.=%.4f, Disp.=%.4f" % (epoch, acc, disp))
 
 				if 'weight' in self._report:
