@@ -67,6 +67,9 @@ class Experiments(object):
 			v1=self.grad_fairness(w[i])
 			v2=self.grad_robustness(w[i])
 			angle.append(self.calc_angle(v1,v2))
+			print(angle[-1])
+
+		exit()
 
 		plt.clf()
 		plt.xlabel('n_epoch')
@@ -80,7 +83,7 @@ if __name__=='__main__':
 	for data in ['adult', 'compas', 'hospital']:
 		for attr in ['sex', 'race']:
 			for alpha in [0.0, 0.1, 0.2, 0.3]:
-				for beta in [0.0, 0.01, 0.02, 0.03]:
+				for beta in [0.01, 0.01, 0.02, 0.03]:
 					exp=Experiments(data,attr,alpha=alpha,beta=beta,n_epoch=3000,bias=True)
 					exp.exec()
 					del exp
