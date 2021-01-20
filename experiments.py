@@ -88,9 +88,9 @@ if __name__=='__main__':
 	for data in ['adult', 'compas', 'hospital']:
 		for attr in ['sex', 'race']:
 			for alpha in [0.00, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30]:
-				for beta in [0.00, 0.01, 0.01, 0.02, 0.03]:
+				for beta in [0.00, 0.01, 0.02, 0.03, 0.04, 0.05]:
 					print((data, attr, alpha, beta))
-					exp=Experiments(data,attr,alpha=alpha,beta=beta,n_epoch=3000,bias=True, prefix='lr_truepos_disp')
+					exp=Experiments(data,attr,alpha=alpha,beta=beta,n_epoch=2000,bias=True, prefix='lr_truepos_disp')
 					exp.exec()
 					del exp
-					sleep(10)
+					sleep(5)
