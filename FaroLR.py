@@ -11,19 +11,21 @@ def loss_fairness(X, y, w, tp=False):
 		u_up = torch.sum(torch.sigmoid(torch.matmul(X, w)) * (1.0 - X[:, 0]))
 		v_down = torch.sum(X[:, 0])
 		v_up = torch.sum(torch.sigmoid(torch.matmul(X, w)) * X[:, 0])
-		loss = torch.abs((u_up / u_down) - (v_up / v_down))
 	else:
 		y_flat=y.reshape(-1)
 		u_down = torch.sum((1.0 - X[:, 0]) * y_flat)
 		u_up = torch.sum(torch.sigmoid(torch.matmul(X, w)) * (1.0 - X[:, 0]) * y_flat)
 		v_down = torch.sum(X[:, 0] * y_flat)
 		v_up = torch.sum(torch.sigmoid(torch.matmul(X, w)) * X[:, 0] * y_flat)
-		loss = torch.abs((u_up / u_down) - (v_up / v_down))
+	p0=u_up/u_down
+	p1=v_up/v_down
+	loss = torch.square(p0 - p1)
 	return loss
 
 def loss_robustness(X, y, w):
 	gradx = (y.reshape(-1) - torch.sigmoid(torch.matmul(X, w))).reshape(-1, 1) * w
-	loss = torch.mean(torch.sum(torch.abs(gradx), axis=1))
+	loss = torch.mean(torch.sum(torch.square(gradx), axis=1))
+	# loss = torch.mean(torch.abs(w))
 	return loss
 
 
@@ -49,7 +51,7 @@ class LogisticRegressionCore(torch.nn.Module):
 
 class FaroLR(object):
 	def __init__(
-		self, lr=0.01, n_epoch=1000, bias=True, fairness=0.0, robustness=0.0, tp_fairness=False, report=[], seed=None
+		self, lr=0.01, n_epoch=1000, bias=True, fairness=0.0, robustness=0.0, tp_fairness=False, report=[], comp=False, seed=None
 	):
 		self._lr = lr
 		self._n_epoch = n_epoch
@@ -60,12 +62,13 @@ class FaroLR(object):
 		self._seed = seed
 		self._report = {}
 		self._tp_fairness=tp_fairness
+		self._compromised=comp
 		for item in report:
 			self._report[item]=[]
 
 	def fit(self, X, y):
 		X = torch.hstack([torch.tensor(X).float(), torch.ones(X.shape[0], 1)])
-		X = torch.tensor(X, requires_grad=True)
+		X = torch.tensor(X, requires_grad=False)
 		y = torch.tensor(y).reshape(-1, 1).float()
 
 		self._model = LogisticRegressionCore(
@@ -81,16 +84,25 @@ class FaroLR(object):
 			optim.zero_grad()
 			y_pred = self._model(X)
 			loss = loss_main(y_pred, y)
+
 			if self._fairness is not None and self._fairness != 0.0:
-				loss += self._fairness * loss_fairness(
+				f_loss = self._fairness * loss_fairness(
 					X, y, self._model.linear_model.weight.reshape(-1), tp=self._tp_fairness
 				)
+			else:
+				f_loss = torch.tensor(0.0)
+
 			if self._robustness is not None and self._robustness != 0.0:
 				# loss+=self._robustness*loss_robustness_switch(X,y,self._model.linear_model.weight.reshape(-1),eps=0.1)
-				loss += self._robustness * loss_robustness(
+				r_loss = self._robustness * loss_robustness(
 					X, y, self._model.linear_model.weight.reshape(-1)
 				)
-			loss.backward()
+			else:
+				r_loss = torch.tensor(0.0)
+
+			_loss = loss + f_loss + r_loss
+
+			_loss.backward()
 			optim.step()
 
 			if epoch % 10 == 0:
@@ -111,10 +123,16 @@ class FaroLR(object):
 				if 'accuracy' in self._report or 'disparity' in self._report:
 					self._report['accuracy'].append(acc)
 					self._report['disparity'].append(disp)
+				if 'loss_utility' in self._report:
+					self._report['loss_utility'].append(loss.tolist())
+				if 'loss_fairness' in self._report:
+					self._report['loss_fairness'].append(f_loss.tolist())
+				if 'loss_robustness' in self._report:
+					self._report['loss_robustness'].append(r_loss.tolist())
 
 	def predict(self, X, y=None):
 		X = torch.hstack([torch.tensor(X).float(), torch.ones(X.shape[0], 1)])
-		X = torch.tensor(X, requires_grad=True)
+		X = torch.tensor(X, requires_grad=False)
 		y_pred = np.array(self._model(X).reshape(-1).tolist())
 		if y is not None:
 			metric = Metric(true=y.tolist(), pred=y_pred.tolist())

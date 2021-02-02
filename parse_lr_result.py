@@ -13,7 +13,7 @@ def grad_robustness(X,y,w):
 
 def grad_fairness(X,y,w):
 	w=torch.tensor(w,dtype=torch.float32,requires_grad=True)
-	loss=loss_fairness(X,w)
+	loss=loss_fairness(X,y,w,tp=True)
 	loss.backward()
 	return np.array(w.grad.reshape(-1).tolist())
 
@@ -35,12 +35,14 @@ def angle(X,y,w):
 
 def origin_accuracy():
 
+	path='./result/lr_truepos_disp/'
+
 	ret={}
 
 	alphas=[0.00, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30]
-	betas=[0.0, 0.01, 0.02, 0.03, 0.04, 0.05]
+	betas=[0.00, 0.01, 0.02, 0.03, 0.04, 0.05]
 
-	fnames=os.listdir('./result/logistic_regression/')
+	fnames=os.listdir(path)
 	fnames.sort()
 
 	current_data=None
@@ -69,15 +71,15 @@ def origin_accuracy():
 		if attr not in ret[data]:
 			ret[data][attr]=np.zeros((len(alphas),len(betas)))
 
-		f=open('./result/logistic_regression/'+fname)
+		f=open(path+fname)
 		report=eval(f.readline())
 		f.close()
 
 		# ret[data][attr][alphas.index(alpha)][betas.index(beta)]=report['accuracy'][-1]
 		# ret[data][attr][alphas.index(alpha)][betas.index(beta)]=report['disparity'][-1]
 		# ret[data][attr][alphas.index(alpha)][betas.index(beta)]=report['attack']['attack']
-		angles=[angle(X,y,report['weight'][i]) for i in range(0,len(report['weight']))]
-		ret[data][attr][alphas.index(alpha)][betas.index(beta)]=np.mean(angles)
+		# angles=[angle(X,y,report['weight'][i]) for i in range(0,len(report['weight']))]
+		ret[data][attr][alphas.index(alpha)][betas.index(beta)]=angle(X,y,report['weight'][-1])
 
 	for data in ['adult', 'compas', 'hospital']:
 		for attr in ['race', 'sex']:
@@ -86,9 +88,9 @@ def origin_accuracy():
 			for i in range(matrix.shape[0]):
 				for j in range(matrix.shape[1]):
 					if j==matrix.shape[1]-1:
-						print('%5.2f'%matrix[i][j])
+						print('%0.4f'%matrix[i][j])
 					else:
-						print('%5.2f'%matrix[i][j],end='\t')
+						print('%0.4f'%matrix[i][j],end='\t')
 			print()
 
 	return ret
