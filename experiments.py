@@ -142,6 +142,9 @@ if __name__ == "__main__":
 		for attr in ["sex", "race"]:
 			for alpha in [0.00, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30]:
 				for beta in [0.00, 0.02, 0.04, 0.06, 0.08, 0.10]:
+					
+					start_time = time()
+
 					print('>>>', (data, attr, alpha, beta))
 					exp = Experiments(
 						data,
@@ -154,4 +157,8 @@ if __name__ == "__main__":
 					)
 					exp.exec()
 					del exp
-					sleep(5)
+
+					end_time = time()
+
+					print('>>> Time cost: %.2fs'%(end_time - start_time))
+					sleep(3)
