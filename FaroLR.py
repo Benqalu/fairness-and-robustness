@@ -85,22 +85,19 @@ class FaroLR(object):
 			y_pred = self._model(X)
 			loss = loss_main(y_pred, y)
 
+			f_loss = self._fairness * loss_fairness(
+				X, y, self._model.linear_model.weight.reshape(-1), tp=self._tp_fairness
+			)
+
+			r_loss = self._robustness * loss_robustness(
+				X, y, self._model.linear_model.weight.reshape(-1)
+			)
+
+			_loss = loss
 			if self._fairness is not None and self._fairness != 0.0:
-				f_loss = self._fairness * loss_fairness(
-					X, y, self._model.linear_model.weight.reshape(-1), tp=self._tp_fairness
-				)
-			else:
-				f_loss = torch.tensor(0.0)
-
+				_loss += f_loss
 			if self._robustness is not None and self._robustness != 0.0:
-				# loss+=self._robustness*loss_robustness_switch(X,y,self._model.linear_model.weight.reshape(-1),eps=0.1)
-				r_loss = self._robustness * loss_robustness(
-					X, y, self._model.linear_model.weight.reshape(-1)
-				)
-			else:
-				r_loss = torch.tensor(0.0)
-
-			_loss = loss + f_loss + r_loss
+				_loss += r_loss
 
 			_loss.backward()
 			optim.step()
