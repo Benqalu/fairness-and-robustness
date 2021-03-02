@@ -1,0 +1,9 @@
+Disparity $d$,S.Attr. $s_i$,Label. $y_{i}$, Flip $y_i$?
+d>0,$s_i$=0,$y_i$<0.5,N
+d>0,$s_i$=0,$y_i$>0.5,Y
+d>0,$s_i$=1,$y_i$<0.5,Y
+d>0,$s_i$=1,$y_i$>0.5,N
+d<0,$s_i$=0,$y_i$<0.5,Y
+d<0,$s_i$=0,$y_i$>0.5,N
+d<0,$s_i$=1,$y_i$<0.5,N
+d<0,$s_i$=1,$y_i$>0.5,Y

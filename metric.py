@@ -181,7 +181,13 @@ class Metric(object):
 		else:
 			return ret[1]
 
-	def positive_disparity(self,s):
+	def positive_disparity(self,s,absolute=True):
 		value1=((self.pred>0.5)&(s==0)).sum()/(s==0).sum()
 		value2=((self.pred>0.5)&(s==1)).sum()/(s==1).sum()
-		return abs(value1-value2)
+		if absolute:
+			return abs(value1-value2)
+		else:
+			return value1-value2
+
+	def truepos_disparity(self,s,absolute=True):
+		return self.recall_disparity(s,absolute=absolute)
