@@ -40,7 +40,7 @@ class PreProcFlip(object):
 		self._orig_X=X[:,1:]
 		self._orig_y=y.reshape(-1)
 
-		X, X_test, s, s_test, y, y_test=train_test_split(self._orig_X,self._orig_s,self._orig_y,test_size=0.33)
+		X, X_test, s, s_test, y, y_test=train_test_split(self._orig_X,self._orig_s,self._orig_y,test_size=0.3)
 
 		self._train_pack_np=(X,s,y,y.copy())
 		self._test_pack_np=(X_test,s_test,y_test)
