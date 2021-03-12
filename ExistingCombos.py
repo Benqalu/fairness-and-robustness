@@ -319,32 +319,62 @@ if __name__=='__main__':
 		'fairness_disparate': [round(i*0.05,2) for i in range(0,21)],
 		'fairness_adversarial': [round(i*0.05,2) for i in range(0,21)],
 	}
-	print(params)
-	exit()
 
-	for func in [fairness_reweighing, fairness_disparate, fairness_adversarial]:
-		for method in ['FGSM','PGD']:
-			for data in ['compas','adult']:
-				for attr in ['race','sex']:
-					for p in params[func.__name__]:
+	import sys, json
 
-						Rf=func(data,attr,method=method,mitigation=True,param=p)
-						Ro=func(data,attr,method=method,mitigation=False,param=p)
-						print('>>>',data,attr,round((Ro['robustness_score']-Rf['robustness_score'])/Ro['robustness_score'],4))
+	if len(sys.argv)>2:
+		func = locals()[sys.argv[1]]
+		method = sys.argv[2]
+		data = sys.argv[3].lower().strip()
+		attr = sys.argv[4].lower().strip()
+		pidx = int(sys.argv[5])
+		p = params[func.__name__][pidx]
 
-						report={
-							'data':data,
-							'attr':attr,
-							'attack':method,
-							'mitigation':func.__name__,
-							'result_orig':Ro,
-							'result_fair':Rf,
-							'change':(Ro['robustness_score']-Rf['robustness_score'])/Ro['robustness_score'],
-						}
+		print(func.__name__, method, data, attr, p)
 
-						f=open('./result/existings/r_on_f.txt','a')
-						f.write(str(report)+'\n')
-						f.close()
+		Rf=func(data,attr,method=method,mitigation=True,param=p)
+		Ro=func(data,attr,method=method,mitigation=False,param=p)
+		print('>>>',data,attr,'Change:',round((Ro['robustness_score']-Rf['robustness_score'])/Ro['robustness_score'],4))
+
+		report={
+			'data':data,
+			'attr':attr,
+			'attack':method,
+			'mitigation':func.__name__,
+			'result_orig':Ro,
+			'result_fair':Rf,
+			'change':(Ro['robustness_score']-Rf['robustness_score'])/Ro['robustness_score'],
+		}
+
+		f=open('./result/existings/r_on_f.txt','a')
+		f.write(json.dumps(report)+'\n')
+		f.close()
+
+	else:
+
+		for func in [fairness_reweighing, fairness_disparate, fairness_adversarial]:
+			for method in ['FGSM','PGD']:
+				for data in ['compas','adult']:
+					for attr in ['race','sex']:
+						for p in params[func.__name__]:
+
+							Rf=func(data,attr,method=method,mitigation=True,param=p)
+							Ro=func(data,attr,method=method,mitigation=False,param=p)
+							print('>>>',data,attr,round((Ro['robustness_score']-Rf['robustness_score'])/Ro['robustness_score'],4))
+
+							report={
+								'data':data,
+								'attr':attr,
+								'attack':method,
+								'mitigation':func.__name__,
+								'result_orig':Ro,
+								'result_fair':Rf,
+								'change':(Ro['robustness_score']-Rf['robustness_score'])/Ro['robustness_score'],
+							}
+
+							f=open('./result/existings/r_on_f.txt','a')
+							f.write(str(report)+'\n')
+							f.close()
 
 
 
