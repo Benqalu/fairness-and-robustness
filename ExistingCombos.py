@@ -188,6 +188,7 @@ def fairness_disparate(data, attr, method='FGSM', mitigation=True, param=1.0):
 		test_disp=model.disparity(X_test,s_test,y_test)
 		attack_disp=model.disparity_attack(X_test,s_test,y_test,method)
 		report={'train_acc':train_acc,'test_acc':test_acc,'attack_acc':attack_acc,'test_disp':test_disp,'attack_disp':attack_disp,'robustness_score':test_acc - attack_acc}
+		report['param']=param
 		print('Training Acc.:', train_acc)
 		print('Testing Acc.:', test_acc)
 		print('Testing Atk Acc.:', attack_acc)
@@ -202,12 +203,13 @@ def fairness_disparate(data, attr, method='FGSM', mitigation=True, param=1.0):
 		test_disp=model.disparity(X_test,s_test,y_test)
 		attack_disp=model.disparity_attack(X_test,s_test,y_test,method)
 		report={'train_acc':train_acc,'test_acc':test_acc,'attack_acc':attack_acc,'test_disp':test_disp,'attack_disp':attack_disp,'robustness_score':test_acc - attack_acc}
+		report['param']=param
 		print('Training Acc.:', train_acc)
 		print('Testing Acc.:', test_acc)
 		print('Testing Atk Acc.:', attack_acc)
 		return report
 
-def fairness_reweighing(data, attr, method='FGSM', mitigation=True):
+def fairness_reweighing(data, attr, method='FGSM', mitigation=True, param=None):
 	data_train, data_test, privileged_groups, unprivileged_groups = load_data(data,attr)
 	
 	preproc = Reweighing(unprivileged_groups=unprivileged_groups,privileged_groups=privileged_groups)
@@ -225,6 +227,7 @@ def fairness_reweighing(data, attr, method='FGSM', mitigation=True):
 		test_disp=model.disparity(X_test,s_test,y_test)
 		attack_disp=model.disparity_attack(X_test,s_test,y_test,method)
 		report={'train_acc':train_acc,'test_acc':test_acc,'attack_acc':attack_acc,'test_disp':test_disp,'attack_disp':attack_disp,'robustness_score':test_acc - attack_acc}
+		report['param']=param
 		print('Training Acc.:', train_acc)
 		print('Testing Acc.:', test_acc)
 		print('Testing Atk Acc.:', attack_acc)
@@ -238,6 +241,7 @@ def fairness_reweighing(data, attr, method='FGSM', mitigation=True):
 		test_disp=model.disparity(X_test,s_test,y_test)
 		attack_disp=model.disparity_attack(X_test,s_test,y_test,method)
 		report={'train_acc':train_acc,'test_acc':test_acc,'attack_acc':attack_acc,'test_disp':test_disp,'attack_disp':attack_disp,'robustness_score':test_acc - attack_acc}
+		report['param']=param
 		print('Training Acc.:', train_acc)
 		print('Testing Acc.:', test_acc)
 		print('Testing Atk Acc.:', attack_acc)
@@ -288,6 +292,8 @@ def fairness_adversarial(data, attr, method='FGSM', mitigation=True, param=0.1):
 	tf.reset_default_graph()
 
 	report={'train_acc':train_acc,'test_acc':test_acc,'attack_acc':attack_acc,'test_disp':test_disp,'attack_disp':attack_disp,'robustness_score':test_acc - attack_acc}
+	report['param']=param
+
 	return report
 
 def data_generator():
@@ -308,28 +314,37 @@ def data_generator():
 
 if __name__=='__main__':
 
+	params={
+		'fairness_reweighing': [None],
+		'fairness_disparate': [round(i*0.05,2) for i in range(0,21)],
+		'fairness_adversarial': [round(i*0.05,2) for i in range(0,21)],
+	}
+	print(params)
+	exit()
+
 	for func in [fairness_reweighing, fairness_disparate, fairness_adversarial]:
-		for method in ['FGSM']:#,'PGD']:
-			for data in ['compas']:
-				for attr in ['race']:#,'sex']:
+		for method in ['FGSM','PGD']:
+			for data in ['compas','adult']:
+				for attr in ['race','sex']:
+					for p in params[func.__name__]:
 
-					Rf=func(data,attr,method=method,mitigation=True)
-					Ro=func(data,attr,method=method,mitigation=False)
-					print('>>>',data,attr,round((Ro['robustness_score']-Rf['robustness_score'])/Ro['robustness_score'],4))
+						Rf=func(data,attr,method=method,mitigation=True,param=p)
+						Ro=func(data,attr,method=method,mitigation=False,param=p)
+						print('>>>',data,attr,round((Ro['robustness_score']-Rf['robustness_score'])/Ro['robustness_score'],4))
 
-					report={
-						'data':data,
-						'attr':attr,
-						'attack':method,
-						'mitigation':func.__name__,
-						'result_orig':Ro,
-						'result_fair':Rf,
-						'change':(Ro['robustness_score']-Rf['robustness_score'])/Ro['robustness_score'],
-					}
+						report={
+							'data':data,
+							'attr':attr,
+							'attack':method,
+							'mitigation':func.__name__,
+							'result_orig':Ro,
+							'result_fair':Rf,
+							'change':(Ro['robustness_score']-Rf['robustness_score'])/Ro['robustness_score'],
+						}
 
-					f=open('./result/existings/r_on_f.txt','a')
-					f.write(str(report)+'\n')
-					f.close()
+						f=open('./result/existings/r_on_f.txt','a')
+						f.write(str(report)+'\n')
+						f.close()
 
 
 
