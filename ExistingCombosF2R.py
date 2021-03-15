@@ -346,7 +346,7 @@ if __name__=='__main__':
 			'change':(Ro['robustness_score']-Rf['robustness_score'])/Ro['robustness_score'],
 		}
 
-		f=open('./result/existings/r_on_f.txt','a')
+		f=open('./result/existings/r2f.txt','a')
 		f.write(json.dumps(report)+'\n')
 		f.close()
 
