@@ -15,7 +15,7 @@ try:
 					for attr in ['race','sex']:
 						for pidx in range(prngs[func]):
 							# print(func, method, data, attr, pidx)
-							os.system('python ExistingCombos.py %s %s %s %s %s'%(func, method, data, attr, pidx))
+							os.system('python ExistingCombosF2R.py %s %s %s %s %s'%(func, method, data, attr, pidx))
 							sleep(3)
 except KeyboardInterrupt:
 	pass

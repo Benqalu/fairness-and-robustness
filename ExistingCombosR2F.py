@@ -45,7 +45,7 @@ def main(data, attr, method='FGSM', eps=0.1, defense=None):
 	}
 
 	train, test = load_split(data, attr)
-	model = TorchNeuralNetworks(hiddens=[128])
+	model = TorchNeuralNetworks(lr=0.1,n_epoch=500,hiddens=[128],seed=None)
 	model.fit(train['X'], train['s'], train['y'])
 
 	acc, disp = model.metrics(X=train['X'],y=train['y'],s=train['s'])
@@ -54,12 +54,11 @@ def main(data, attr, method='FGSM', eps=0.1, defense=None):
 
 	if defense is not None and defense>0.0:
 		advexps=model.advexp(train['X'], train['y'], eps=eps, method=method)
-		print(advexps.shape)
 		idx=np.random.choice(np.arange(0,train['X'].shape[0]),int(train['X'].shape[0]*defense),replace=False)
 		X_adv=np.vstack([train['X'],advexps[idx,:]])
-		print(X_adv.shape)
 		y_adv=np.hstack([train['y'],train['y'][idx]])
 		s_adv=np.hstack([train['s'],train['s'][idx]])
+		model = TorchNeuralNetworks(lr=0.1,n_epoch=500,hiddens=[128],seed=None)
 		model.fit(X_adv,s_adv,y_adv)
 		acc, disp = model.metrics(X=train['X'],y=train['y'],s=train['s'])
 		report['train_adv']['acc']=acc
@@ -81,5 +80,5 @@ def main(data, attr, method='FGSM', eps=0.1, defense=None):
 	
 
 if __name__=='__main__':
-	report=main('compas','sex',method='PGD',defense=0.5)
+	report=main('compas','race',method='PGD',defense=0.00)
 	print(report)
