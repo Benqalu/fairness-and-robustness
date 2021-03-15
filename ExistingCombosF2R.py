@@ -64,7 +64,7 @@ class TorchLogisticRegression(object):
 		if weight is not None:
 			weight=torch.tensor(weight.reshape(-1,1), dtype=torch.float)
 		self._model=TorchNNCore(inps=X.shape[1], hiddens=[128], seed=seed)
-		optim=torch.optim.Adam(self._model.parameters(), lr=self._lr)# weight_decay=1E-4)
+		optim=torch.optim.Adam(self._model.parameters(), lr=self._lr, weight_decay=1E-4)
 		for epoch in range(self._n_epoch):
 			optim.zero_grad()
 			y_pred=self._model(X)
