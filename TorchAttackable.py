@@ -63,8 +63,11 @@ class TorchNeuralNetworks(object):
 			optim.step()
 
 	def AdvExp(self, X, y=None, method="FGSM", eps=0.1):
-		if method == "FGSM":
+		if type(X) is torch.Tensor:
+			X_ = X.clone().detach().requires_grad_(True)
+		else:
 			X_ = torch.tensor(X, dtype=torch.float, requires_grad=True)
+		if method == "FGSM":
 			y_pred = self._model(X_)
 			if y is not None:
 				y_ = torch.tensor(y.reshape(-1, 1), dtype=torch.float)
@@ -74,7 +77,6 @@ class TorchNeuralNetworks(object):
 			noise = eps * torch.sign(torch.autograd.grad(loss, X_)[0])
 			return (X_ + noise).detach().numpy()
 		elif method == "PGD":
-			X_ = torch.tensor(X, dtype=torch.float, requires_grad=True)
 			if y is not None:
 				y_ = torch.tensor(y.reshape(-1, 1), dtype=torch.float)
 			else:
@@ -89,7 +91,10 @@ class TorchNeuralNetworks(object):
 			return X_.detach().numpy()
 
 	def predict(self, X):
-		X_ = torch.tensor(X, dtype=torch.float)
+		if type(X) is torch.Tensor:
+			X_ = X.clone().detach()
+		else:
+			X_ = torch.tensor(X, dtype=torch.float)
 		return self._model(X_).detach().numpy().reshape(-1)
 
 	def predict_attack(self, X, y=None, method="FGSM", eps=0.1):
@@ -103,9 +108,9 @@ class TorchNeuralNetworks(object):
 		if s is not None:
 			acc = metric.accuracy()
 			disp = metric.positive_disparity(s=s)
-			return acc, disp
+			return round(acc,6), round(disp,6)
 		else:
-			return metric.accuracy()
+			return round(metric.accuracy(),6)
 
 	def metrics_attack(self, X, y, s=None, method="FGSM", use_y=True):
 		if use_y:
@@ -116,6 +121,6 @@ class TorchNeuralNetworks(object):
 		if s is not None:
 			acc = metric.accuracy()
 			disp = metric.positive_disparity(s=s)
-			return acc, disp
+			return round(acc,6), round(disp,6)
 		else:
-			return metric.accuracy()
+			return round(metric.accuracy(),6)

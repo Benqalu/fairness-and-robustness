@@ -2,6 +2,37 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 
+def load_split(data,attr,del_s=True,ret_col=False):
+	df=pd.read_csv(f'./data/{data}_train.csv')
+	columns=list(df.columns)
+	data_train=df.to_numpy()
+	s_train=data_train[:,columns.index(attr)]
+	y_train=data_train[:,-1]
+	X_train=np.delete(data_train[:,:-1],columns.index(attr),axis=1)
+	if not del_s:
+		X_train=np.hstack([s_train.reshape(-1,1),X_train])
+
+	df=pd.read_csv(f'./data/{data}_test.csv')
+	columns=list(df.columns)
+	data_test=df.to_numpy()
+	s_test=data_test[:,columns.index(attr)]
+	y_test=data_test[:,-1]
+	X_test=np.delete(data_test[:,:-1],columns.index(attr),axis=1)
+	if not del_s:
+		X_test=np.hstack([s_test.reshape(-1,1),X_test])
+
+	train={'X':X_train,'s':s_train,'y':y_train}
+	test={'X':X_test,'s':s_test,'y':y_test}
+
+	if ret_col:
+		columns.remove(attr)
+		if not del_s:
+			columns=[attr]+columns
+		train['name']=columns
+		test['name']=columns
+
+	return train, test 
+
 def calc_angle(v1,v2,rad=False):
 	u1=v1/np.linalg.norm(v1)
 	u2=v2/np.linalg.norm(v2)
