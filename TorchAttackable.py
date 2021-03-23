@@ -37,6 +37,7 @@ class TorchNeuralNetworks(object):
 		self._loss_func = torch.nn.BCELoss(reduction="none")
 		self._hiddens = hiddens
 		self._seed = seed
+		self._device = torch.device('cpu')
 		if self._seed is not None:
 			np.random.seed(seed)
 			torch.manual_seed(seed)
@@ -66,19 +67,19 @@ class TorchNeuralNetworks(object):
 		if type(X) is torch.Tensor:
 			X_ = X.clone().detach().requires_grad_(True)
 		else:
-			X_ = torch.tensor(X, dtype=torch.float, requires_grad=True)
+			X_ = torch.tensor(X, dtype=torch.float, requires_grad=True, device=self._device)
 		if method == "FGSM":
 			y_pred = self._model(X_)
 			if y is not None:
-				y_ = torch.tensor(y.reshape(-1, 1), dtype=torch.float)
+				y_ = torch.tensor(y.reshape(-1, 1), dtype=torch.float, device=self._device)
 			else:
 				y_ = torch.round(y_pred).detach()
 			loss = self._loss_func(y_pred, y_).mean()
 			noise = eps * torch.sign(torch.autograd.grad(loss, X_)[0])
-			return (X_ + noise).detach().numpy()
+			return (X_ + noise).detach()
 		elif method == "PGD":
 			if y is not None:
-				y_ = torch.tensor(y.reshape(-1, 1), dtype=torch.float)
+				y_ = torch.tensor(y.reshape(-1, 1), dtype=torch.float, device=self._device)
 			else:
 				y_ = None
 			for i in range(0, 10):
@@ -88,19 +89,18 @@ class TorchNeuralNetworks(object):
 				loss = self._loss_func(y_pred, y_).mean()
 				noise = (eps * 0.1) * torch.sign(torch.autograd.grad(loss, X_)[0])
 				X_ = (X_ + noise).detach().requires_grad_(True)
-			return X_.detach().numpy()
+			return X_.detach()
 
 	def predict(self, X):
 		if type(X) is torch.Tensor:
 			X_ = X.clone().detach()
 		else:
-			X_ = torch.tensor(X, dtype=torch.float)
-		return self._model(X_).detach().numpy().reshape(-1)
+			X_ = torch.tensor(X, dtype=torch.float, device=self._device)
+		return self._model(X_).detach().cpu().numpy().reshape(-1)
 
 	def predict_attack(self, X, y=None, method="FGSM", eps=0.1):
 		X_ = self.AdvExp(X, y, method=method, eps=eps)
-		X_ = torch.tensor(X_, dtype=torch.float)
-		return self._model(X_).detach().numpy().reshape(-1)
+		return self._model(X_).detach().cpu().numpy().reshape(-1)
 
 	def metrics(self, X, y, s=None):
 		y_pred = self.predict(X)
