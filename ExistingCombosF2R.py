@@ -15,7 +15,7 @@ from aif360.algorithms.inprocessing import PrejudiceRemover
 from ExistingApproaches.adversarial_debiasing import AdversarialDebiasing
 from aif360.algorithms.preprocessing import DisparateImpactRemover
 
-from TorchAttackable import TorchNeuralNetworks, TorchNNCore
+from TorchAdversarial import TorchAdversarial
 from metric import Metric
 
 global_seed = None
@@ -32,7 +32,7 @@ def load_data(data,attr):
 	if data=='adult':
 		with gzip.open(f'./data/{data}_train.pkl.gz', 'rb') as handle:
 			data_train = pickle.load(handle)
-		with gzip.open(f'./data/{data}_train.pkl.gz', 'rb') as handle:
+		with gzip.open(f'./data/{data}_test.pkl.gz', 'rb') as handle:
 			data_test = pickle.load(handle)
 		if attr=="sex":
 			privileged_groups = [{'sex': 1}]
@@ -46,7 +46,7 @@ def load_data(data,attr):
 
 		with gzip.open(f'./data/{data}_train.pkl.gz', 'rb') as handle:
 			data_train = pickle.load(handle)
-		with gzip.open(f'./data/{data}_train.pkl.gz', 'rb') as handle:
+		with gzip.open(f'./data/{data}_test.pkl.gz', 'rb') as handle:
 			data_test = pickle.load(handle)
 
 		if attr == "sex":
@@ -82,21 +82,15 @@ def fairness_reweighing(data, attr, method='FGSM', mitigation=True, param=None):
 	X,s,y,weight=get_Xsy(data_train_proc,attr,del_s=False)
 	X_test,s_test,y_test,_=get_Xsy(data_test,attr,del_s=False)
 
-	model = TorchNeuralNetworks(lr=0.1,n_epoch=500,hiddens=[128],seed=global_seed)
+	model = TorchAdversarial(lr=0.01, n_epoch=500, method=None, hiddens=[128], seed=global_seed)
 	if mitigation:
-		model.fit(X,s,y,weight)
+		model.fit(X,y,s,weight)
 	else:
-		model.fit(X,s,y)
-	train_acc, train_disp = model.metrics(X=X,y=y,s=s)
-	test_acc, test_disp = model.metrics(X=X_test,y=y_test,s=s_test)
-	test_adv_acc, test_adv_disp = model.metrics_attack(X=X_test,y=y_test,s=s_test,method=method,use_y=False)
+		model.fit(X,y,s)
 	report={
-		'train_acc':train_acc,
-		'train_disp':train_disp,
-		'test_acc':test_acc,
-		'test_disp':test_disp,
-		'test_adv_acc':test_adv_acc,
-		'test_adv_disp':test_adv_disp,
+		'train':model.metrics(X=X,y=y,s=s),
+		'test':model.metrics(X=X_test,y=y_test,s=s_test),
+		'test_adv':model.metrics_attack(X=X_test,y=y_test,s=s_test,method=method,use_y=False),
 	}
 	# print('Training Acc.:', train_acc)
 	# print('Testing Acc.:', test_acc)
@@ -115,18 +109,12 @@ def fairness_disparate(data, attr, method='FGSM', mitigation=True, param=1.0):
 		X,s,y,weight=get_Xsy(data_train_proc,attr,del_s=False)
 	else:
 		X,s,y,weight=get_Xsy(data_train,attr,del_s=False)
-	model = TorchNeuralNetworks(lr=0.1,n_epoch=500,hiddens=[128],seed=global_seed)
-	model.fit(X,s,y,weight)
-	train_acc, train_disp = model.metrics(X=X,y=y,s=s)
-	test_acc, test_disp = model.metrics(X=X_test,y=y_test,s=s_test)
-	test_adv_acc, test_adv_disp = model.metrics_attack(X=X_test,y=y_test,s=s_test,method=method,use_y=False)
+	model = TorchAdversarial(lr=0.01, n_epoch=500, method=None, hiddens=[128], seed=global_seed)
+	model.fit(X,y,s,weight)
 	report={
-		'train_acc':train_acc,
-		'train_disp':train_disp,
-		'test_acc':test_acc,
-		'test_disp':test_disp,
-		'test_adv_acc':test_adv_acc,
-		'test_adv_disp':test_adv_disp,
+		'train':model.metrics(X=X,y=y,s=s),
+		'test':model.metrics(X=X_test,y=y_test,s=s_test),
+		'test_adv':model.metrics_attack(X=X_test,y=y_test,s=s_test,method=method,use_y=False),
 	}
 	# print('Training Acc.:', train_acc)
 	# print('Testing Acc.:', test_acc)
@@ -209,8 +197,7 @@ if __name__=='__main__':
 
 	params={
 		'fairness_reweighing': [None],
-		'fairness_disparate': [1.0],
-		'fairness_adversarial': [0.1],
+		'fairness_disparate': [0.2,0.4,0.6,0.8,1.0],
 	}
 
 	if len(sys.argv)>2:
@@ -219,31 +206,34 @@ if __name__=='__main__':
 		method = sys.argv[3]
 		func = locals()[sys.argv[4]]
 		pidx = int(sys.argv[5])
-		p = params[func.__name__][pidx]
+		seed = int(time.time())
+		print('Seed is %d.'%seed)
 	else:
 		data = 'compas'
 		attr = 'race'
 		method = 'FGSM'
-		func = fairness_adversarial
-		pidx = 0
-		p = params[func.__name__][pidx]
+		func = fairness_reweighing
+		seed = None
 
-	seed=int(time.time())
-	print('Seed:',seed)
-	print(data, attr, method, func.__name__, p)
+	param = params[func.__name__][pidx]
+
+	print(data, attr, method, func.__name__, param)
 
 	reset_seed(seed)
-	Rf=func(data,attr,method=method,mitigation=True,param=p)
+	Rf=func(data,attr,method=method,mitigation=True,param=param)
 	reset_seed(seed)
-	Ro=func(data,attr,method=method,mitigation=False,param=p)
+	Ro=func(data,attr,method=method,mitigation=False,param=param)
 
 	report={
+		'seed':seed,
 		'data':data,
 		'attr':attr,
 		'method':method,
 		'func':func.__name__,
 		'result_orig':Ro,
 		'result_fair':Rf,
+		'param':param,
+		'pidx':pidx,
 	}
 
 	f=open('./result/existings/F2R.txt','a')

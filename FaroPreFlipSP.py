@@ -1,5 +1,8 @@
 import torch
 import numpy as np
+
+from TorchAttackable import TorchNNCore
+
 from sklearn.model_selection import train_test_split
 
 from sklearn.linear_model import LogisticRegression as SKLogisticRegression
@@ -10,25 +13,13 @@ from utils import get_data
 
 from matplotlib import pyplot as plt
 
-
-class TorchLogistic(torch.nn.Module):
-	def __init__(self, inps, bias=True, seed=None):
-		super(TorchLogistic, self).__init__()
-		if seed is not None:
-			torch.manual_seed(seed)
-		self.linear_model = torch.nn.Linear(inps, 1, bias=bias)
-		self.activation = torch.nn.Sigmoid()
-	def forward(self, x):
-		return self.activation(self.linear_model(x))
-
 class PreProcFlip(object):
-	def __init__(self, data, attr, k=10, seed=24, delta=0.01, kind='SP', credit_lim=1, max_iter=1000):
-		self._delta=delta
+	def __init__(self, data, attr, k=10, seed=24, credit_lim=1, max_iter=1000):
+		self._delta=0.01
 		self._data=data
 		self._attr=attr
 		self._k=k
 		self._seed=seed
-		self._kind=kind
 		self._credit_limit=credit_lim
 		self._max_iter=max_iter
 		if self._seed is not None:
@@ -72,7 +63,7 @@ class PreProcFlip(object):
 		X_test,s_test,y_test=self._test_pack
 
 		res={
-			'setting': '%s_%s_%s'%(self._kind,self._data,self._attr),
+			'setting': '%s_%s'%(self._data,self._attr),
 			'train':{
 				'acc':[],
 				'disp':[],
@@ -84,20 +75,31 @@ class PreProcFlip(object):
 			'iter':[],
 		}
 
-		model=TorchLogistic(inps=X.shape[1], seed=self._seed)
-		optim=torch.optim.Adam(model.parameters(),lr=0.1)
+		model=TorchNNCore(inps=X.shape[1], hiddens=[128], seed=self._seed)
+		optim=torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=1E-4)
 		loss_func=torch.nn.BCELoss()
 		credit={}
 		
 		for it in range(0, self._max_iter):
 
 			# BEGIN: Train modified model
-			for epoch in range(0,300):
+			last_loss = None
+			backward_tol = 20
+			for epoch in range(0,500):
 				optim.zero_grad()
 				y_pred=model(X)
 				loss=self._BCELoss(y_pred,y_prime)
+				this_loss = loss.tolist()
+				if last_loss is not None:
+					if last_loss < this_loss:
+						backward_tol -= 1
+						if backward_tol == 0:
+							break
+				last_loss = this_loss
 				loss.backward()
 				optim.step()
+			print(epoch, backward_tol
+			)
 			acc, disp = self._AccDisp(y_prime, y_pred,s_np)
 			if disp<=self._delta:
 				break
@@ -196,6 +198,6 @@ def draw(res):
 
 
 if __name__=='__main__':
-	model = PreProcFlip('adult','race',delta=0.09)
+	model = PreProcFlip('adult','race')
 	res=model.fit_transform()
 	draw(res)

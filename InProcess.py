@@ -6,7 +6,7 @@ from TorchAttackable import TorchNeuralNetworks, TorchNNCore
 
 class FaroInProc(TorchNeuralNetworks):
 	def __init__(
-		self, lr=0.01, n_epoch=1000, method="FGSM", eps=0.1, hiddens=[], seed=None
+		self, lr=0.01, n_epoch=500, method="FGSM", eps=0.1, hiddens=[], seed=None
 	):
 		super(FaroInProc, self).__init__(
 			lr=lr, n_epoch=n_epoch, hiddens=hiddens, seed=seed
@@ -39,10 +39,9 @@ class FaroInProc(TorchNeuralNetworks):
 
 		report = {
 			"epoch": [],
-			"params": [],
-			"grad_u": [],
-			"grad_f": [],
-			"grad_r": [],
+			"angle_ur": [],
+			"angle_uf": [],
+			"angle_rf": [],
 			"loss_u": [],
 			"loss_r": [],
 			"loss_f": [],
@@ -112,15 +111,12 @@ class FaroInProc(TorchNeuralNetworks):
 			loss.backward()
 			optim.step()
 
-			if rep and (epoch % 10 == 1 or epoch == self._n_epoch - 1):
+			if rep and (epoch % 5 == 1 or epoch == self._n_epoch - 1):
 
 				tmp_X_grad = self._X.grad
 				self._X.grad = None
 
 				report["epoch"].append(epoch)
-				report["params"].append(
-					[item.tolist() for item in self._model.parameters()]
-				)
 				report["loss_u"].append(loss_u.tolist() if loss_u is not None else None)
 				report["loss_r"].append(loss_r.tolist() if loss_r is not None else None)
 				report["loss_f"].append(loss_f.tolist() if loss_f is not None else None)
@@ -148,9 +144,7 @@ class FaroInProc(TorchNeuralNetworks):
 				optim.zero_grad()
 				loss_u = self._loss_func(self._model(self._X), self._y)
 				loss_u.backward()
-				report["grad_u"].append(
-					[item.grad.tolist() for item in self._model.parameters()]
-				)
+				grad_u = [item.grad.tolist() for item in self._model.parameters()]
 
 				optim.zero_grad()
 				if self._method == "FGSM":
@@ -160,21 +154,43 @@ class FaroInProc(TorchNeuralNetworks):
 				else:
 					raise RuntimeError("Method must be FGSM or PGD.")
 				loss_r.backward()
-				report["grad_r"].append(
-					[item.grad.tolist() for item in self._model.parameters()]
-				)
+				grad_r = [item.grad.tolist() for item in self._model.parameters()]
+				
 
 				optim.zero_grad()
 				loss_f = self.loss_fairness(self._model(self._X), self._c)
 				loss_f.backward()
-				report["grad_f"].append(
-					[item.grad.tolist() for item in self._model.parameters()]
-				)
+				grad_f = [item.grad.tolist() for item in self._model.parameters()]
+
+				report['angle_ur'].append(calc_angle(grad_u, grad_r))
+				report['angle_uf'].append(calc_angle(grad_u, grad_f))
+				report['angle_rf'].append(calc_angle(grad_r, grad_f))
 
 				self._X.grad = tmp_X_grad
 
 		return report
 
+def calc_angle(v1, v2, rad=False):
+	u1 = np.array(flatten(v1))
+	u2 = np.array(flatten(v2))
+	u1 = u1 / np.linalg.norm(u1)
+	u2 = u2 / np.linalg.norm(u2)
+	dot = np.dot(u1, u2)
+	angle = np.arccos(dot)
+	if rad:
+		return angle
+	else:
+		degree = (angle / np.pi) * 180
+		return degree
+
+def flatten(a):
+	ret = []
+	for item in a:
+		if type(item) is list:
+			ret.extend(flatten(item))
+		else:
+			ret.append(item)
+	return ret
 
 def experiments(data, attr, method="FGSM", wR=0.0, wF=0.0, seed=None, suffix=""):
 	from utils import load_split
@@ -182,7 +198,7 @@ def experiments(data, attr, method="FGSM", wR=0.0, wF=0.0, seed=None, suffix="")
 
 	train, test = load_split(data, attr)
 
-	model = FaroInProc(lr=0.01, n_epoch=1000, hiddens=[128], method=method, seed=seed)
+	model = FaroInProc(lr=0.01, n_epoch=500, hiddens=[128], method=method, seed=seed)
 	report = model.fit(
 		train["X"], train["y"], s=train["s"], wR=wR, wF=wF, test=test, rep=True
 	)

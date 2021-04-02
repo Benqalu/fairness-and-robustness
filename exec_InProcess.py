@@ -25,12 +25,12 @@ wR_list = [
 wF_list = [round(0.05 * i, 2) for i in range(0, 21)]
 
 count = 0
-allct = 30 * 2 * 2 * 1 * len(wR_list) * len(wF_list)
+allct = 10 * 2 * 2 * 1 * len(wR_list) * len(wF_list)
 runtime = 0.0
 
 executed = {}
 
-for it in range(1, 31):
+for it in range(1, 11):
 	if os.path.exists("./result/inproc/RnF_%d.txt.gz" % it):
 		f = gzip.open("./result/inproc/RnF_%d.txt.gz" % it)
 		for line in f:

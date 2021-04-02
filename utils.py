@@ -7,6 +7,7 @@ def load_split(data,attr,del_s=True,ret_col=False):
 	columns=list(df.columns)
 	data_train=df.to_numpy()
 	s_train=data_train[:,columns.index(attr)]
+	c_train = (1 - s_train - s_train) / ((1 - s_train) * np.sum(1 - s_train) + s_train * np.sum(s_train))
 	y_train=data_train[:,-1]
 	X_train=np.delete(data_train[:,:-1],columns.index(attr),axis=1)
 	if not del_s:
@@ -21,7 +22,7 @@ def load_split(data,attr,del_s=True,ret_col=False):
 	if not del_s:
 		X_test=np.hstack([s_test.reshape(-1,1),X_test])
 
-	train={'X':X_train,'s':s_train,'y':y_train}
+	train={'X':X_train,'s':s_train,'y':y_train, 'c':c_train}
 	test={'X':X_test,'s':s_test,'y':y_test}
 
 	if ret_col:
