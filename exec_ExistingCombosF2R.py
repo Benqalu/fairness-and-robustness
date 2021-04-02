@@ -1,7 +1,7 @@
 import os, time, json
 
 count=0
-allct=2*2*2*2*(1+5)*10
+allct=10*2*2*2*(1+5)
 runtime=0.0
 
 executed={}

@@ -1,0 +1,5 @@
+{"train": [0.736714, 0.157638], "test": [0.712167, 0.159818], "test_adv": [0.637833, 0.046741], "seed": 1617327888, "data": "compas", "attr": "race", "method": "FGSM", "wR": 0.1, "pidx": 0}
+{"train": [0.744929, 0.153969], "test": [0.710333, 0.150174], "test_adv": [0.365, 0.008288], "seed": 1617327899, "data": "compas", "attr": "race", "method": "FGSM", "wR": 0.01, "pidx": 1}
+{"train": [0.7405, 0.158809], "test": [0.7125, 0.161622], "test_adv": [0.566833, 0.021869], "seed": 1617327910, "data": "compas", "attr": "race", "method": "FGSM", "wR": 0.05, "pidx": 2}
+{"train": [0.726929, 0.148426], "test": [0.7145, 0.16045], "test_adv": [0.7105, 0.140801], "seed": 1617327921, "data": "compas", "attr": "race", "method": "FGSM", "wR": 0.5, "pidx": 3}
+{"train": [0.725357, 0.163936], "test": [0.719333, 0.173194], "test_adv": [0.706167, 0.170934], "seed": 1617327933, "data": "compas", "attr": "race", "method": "FGSM", "wR": 1.0, "pidx": 4}

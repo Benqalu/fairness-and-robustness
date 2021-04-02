@@ -21,13 +21,13 @@ def load_split(data,attr):
 
 	return {'X':X_train,'s':s_train,'y':y_train}, {'X':X_test,'s':s_test,'y':y_test}
 
-def main(data, attr, method='FGSM', eps=0.1, seed=None):
+def main(data, attr, method='FGSM', eps=0.1, wR=0.1, seed=None):
 	report={}
 
 	train, test = load_split(data, attr)
 
 	model = TorchAdversarial(lr=0.01, n_epoch=500, method=method, hiddens=[128], seed=seed)
-	model.fit(train['X'], train['y'], train['s'], wR=0.1)
+	model.fit(train['X'], train['y'], train['s'], wR=wR)
 
 	report['train'] = model.metrics(X=train['X'],y=train['y'],s=train['s'])
 	report['test'] = model.metrics(X=test['X'],y=test['y'],s=test['s'])
@@ -47,21 +47,31 @@ if __name__=='__main__':
 		data=sys.argv[1]
 		attr=sys.argv[2]
 		method=sys.argv[3]
+		pidx=int(sys.argv[4])
 	else:
 		data='adult'
 		attr='sex'
 		method='FGSM'
-		wR=0.1
+		pidx=0
+
+	wRs = {
+		'FGSM': [0.1, 0.01, 0.05, 0.5, 1.0],
+		'PGD': [0.1, 0.01, 0.05, 0.5, 1.0],
+		'None': [0.1],
+	}
+	wR = wRs[method][pidx]
 
 	seed=int(time.time())
 	print('Seed:',seed)
-	print(data, attr, method)
+	print(data, attr, method, wR)
 
-	report=main(data,attr,method=method,seed=seed)
+	report=main(data,attr,method=method,seed=seed,wR=wR)
 	report['seed']=seed
 	report['data']=data
 	report['attr']=attr
 	report['method']=method
+	report['wR']=wR
+	report['pidx']=pidx
 
 	# print(report)
 
