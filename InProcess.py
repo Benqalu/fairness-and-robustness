@@ -24,8 +24,8 @@ class FaroInProc(TorchNeuralNetworks):
 	def loss_fairness(self, y_pred, c):
 		return torch.abs(torch.sum(y_pred * c))
 
-	def loss_robustness_fgsm(self, g, paritial=True):
-		noise = torch.sign(g)
+	def loss_robustness_fgsm(self, paritial=True):
+		noise = torch.sign(self._X.grad).detach()
 		if not paritial:
 			X_adv = (self._X + self._epsilon * noise).detach()
 			y_adv_pred = self._model(X_adv)
@@ -33,6 +33,21 @@ class FaroInProc(TorchNeuralNetworks):
 		else:
 			X_adv = (self._X[self._idx] + self._epsilon * noise[self._idx]).detach()
 			y_adv_pred = self._model(X_adv)
+			return self._loss_func(y_adv_pred, self._y[self._idx])
+
+	def loss_robustness_pgd(self, paritial=True):
+		noise = torch.sign(self._X.grad).detach()
+		X_adv = self._X.clone().detach().requires_grad_(True)
+		for i in range(0,10):
+			X_adv = (X_adv + self._epsilon*0.1*noise).detach().requires_grad_(True)
+			self._loss_func(self._model(X_adv), self._y).backward()
+			noise = torch.sign(X_adv).detach()
+		X_adv.detach_()
+		if not paritial:
+			y_adv_pred = self._model(X_adv)
+			return self._loss_func(y_adv_pred, self._y)
+		else:
+			y_adv_pred = self._model(X_adv[self._idx])
 			return self._loss_func(y_adv_pred, self._y[self._idx])
 
 	def fit(self, X, y, s=None, wR=0.0, wF=0.0, test=None, rep=False):
@@ -93,9 +108,9 @@ class FaroInProc(TorchNeuralNetworks):
 
 			if self._X.grad is not None:
 				if self._method == "FGSM":
-					loss_r = self.loss_robustness_fgsm(g=self._X.grad, paritial=True)
+					loss_r = self.loss_robustness_fgsm(paritial=True)
 				elif self._method == "PGD":
-					pass
+					loss_r = self.loss_robustness_pgd(paritial=True)
 				else:
 					raise RuntimeError("Method must be FGSM or PGD.")
 				self._X.grad = None
@@ -148,9 +163,9 @@ class FaroInProc(TorchNeuralNetworks):
 
 				optim.zero_grad()
 				if self._method == "FGSM":
-					loss_r = self.loss_robustness_fgsm(self._X.grad, paritial=False)
+					loss_r = self.loss_robustness_fgsm(paritial=False)
 				elif self._method == "PGD":
-					pass
+					loss_r = self.loss_robustness_pgd(paritial=True)
 				else:
 					raise RuntimeError("Method must be FGSM or PGD.")
 				loss_r.backward()

@@ -9,18 +9,19 @@ for line in f:
 	combo=(obj['data'],obj['attr'])
 	if combo not in data:
 		data[combo]={'count':0,}
-	if obj['method'] not in data[combo]:
-		data[combo][obj['method']]=np.array([0.,0.])
-	data[combo][obj['method']]+=np.array(obj['test'])
+	if (obj['method'], obj['wR']) not in data[combo]:
+		data[combo][(obj['method'], obj['wR'])]=np.array([0.,0.])
+	data[combo][(obj['method'], obj['wR'])]+=np.array(obj['test'])
 f.close()
 
 for combo in data:
 	for item in data[combo]:
-		data[combo][item]/=10
-
-print(data)
+		data[combo][item]/=50
 
 for method in ['FGSM', 'PGD']:
 	for combo in sorted(data.keys()):
-		change = (data[combo][method]-data[combo]['None'])/data[combo]['None']
-		print(combo, method, round(change[1],4), data[combo][method])
+		if combo=='count':
+			continue
+		for wR in [0.01,0.05,0.1,0.5,1.0]:
+			change = data[combo][(method,wR)]-data[combo][('None',0.1)]
+			print(combo, method, wR, round(change[1],4))

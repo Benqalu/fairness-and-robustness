@@ -46,7 +46,7 @@ for it in range(1, 31):
 	try:
 		for data in ["compas", "adult"]:
 			for attr in ["race", "sex"]:
-				for method in ["FGSM"]:
+				for method in ["PGD"]:
 					for wR in wR_list:
 						for wF in wF_list:
 							combo = (data, attr, method, wR, wF)
