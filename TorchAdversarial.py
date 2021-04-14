@@ -1,18 +1,48 @@
 import tqdm
 import torch
 import numpy as np
-from TorchAttackable import TorchNNCore, TorchNeuralNetworks
+from metric import Metric
 
-class TorchAdversarial(TorchNeuralNetworks):
-	def __init__(self, lr=0.01, n_epoch=1000, method='FGSM', eps=0.1, hiddens=[], seed=None):
-		super(TorchAdversarial, self).__init__(lr=lr, n_epoch=n_epoch, hiddens=hiddens, seed=seed)
+class TorchNNCore(torch.nn.Module):
+	def __init__(
+		self, inps, hiddens=[], bias=True, seed=None, hidden_activation=torch.nn.ReLU
+	):
+		super(TorchNNCore, self).__init__()
+		if seed is not None:
+			torch.manual_seed(seed)
+		struct = [inps] + hiddens + [1]
+		layers = []
+		for i in range(1, len(struct)):
+			layers.append(
+				torch.nn.Linear(
+					in_features=struct[i - 1], out_features=struct[i], bias=bias
+				)
+			)
+			if i == len(struct) - 1:
+				layers.append(torch.nn.Sigmoid())
+			else:
+				layers.append(hidden_activation())
+		self.model = torch.nn.Sequential(*layers)
+
+	def forward(self, x):
+		output = self.model(x)
+		return output
+
+class TorchAdversarial(object):
+	def __init__(self, lr=0.01, n_epoch=1000, method='FGSM', eps=0.1, hiddens=[], hidden_activation=torch.nn.ReLU, seed=None):
+		# super(TorchAdversarial, self).__init__(lr=lr, n_epoch=n_epoch, hiddens=hiddens, seed=seed)
 		self._seed = seed
-		if self._seed is not None:
-			np.random.seed(self._seed)
-			torch.manual_seed(self._seed)
 		self._loss_func=torch.nn.BCELoss(reduction='none')
 		self._method=method
 		self._epsilon = eps
+		self._hiddens = hiddens
+		self._hidden_activation = hidden_activation
+		self._lr = lr
+		self._n_epoch = n_epoch
+		self._device = torch.device('cpu')
+		if self._seed is not None:
+			np.random.seed(self._seed)
+			torch.manual_seed(self._seed)
 
 	def loss_robustness_fgsm(self, paritial=True):
 		noise = torch.sign(self._X.grad).detach()
@@ -53,7 +83,7 @@ class TorchAdversarial(TorchNeuralNetworks):
 		self._s=s
 
 		self._model = TorchNNCore(
-			inps=self._X.shape[1], hiddens=self._hiddens, seed=self._seed
+			inps=self._X.shape[1], hiddens=self._hiddens, hidden_activation=self._hidden_activation, seed=self._seed
 		)
 		optim = torch.optim.Adam(
 			self._model.parameters(),
@@ -80,6 +110,68 @@ class TorchAdversarial(TorchNeuralNetworks):
 			optim.zero_grad()
 			loss.backward()
 			optim.step()
+
+	def AdvExp(self, X, y=None, method="FGSM", eps=0.1):
+		if type(X) is torch.Tensor:
+			X_ = X.clone().detach().requires_grad_(True)
+		else:
+			X_ = torch.tensor(X, dtype=torch.float, requires_grad=True, device=self._device)
+		if method == "FGSM":
+			y_pred = self._model(X_)
+			if y is not None:
+				y_ = torch.tensor(y.reshape(-1, 1), dtype=torch.float, device=self._device)
+			else:
+				y_ = torch.round(y_pred).detach()
+			loss = self._loss_func(y_pred, y_).mean()
+			noise = eps * torch.sign(torch.autograd.grad(loss, X_)[0])
+			return (X_ + noise).detach()
+		elif method == "PGD":
+			if y is not None:
+				y_ = torch.tensor(y.reshape(-1, 1), dtype=torch.float, device=self._device)
+			else:
+				y_ = None
+			for i in range(0, 10):
+				y_pred = self._model(X_)
+				if y_ is None:
+					y_ = torch.round(y_pred).detach()
+				loss = self._loss_func(y_pred, y_).mean()
+				noise = (eps * 0.1) * torch.sign(torch.autograd.grad(loss, X_)[0])
+				X_ = (X_ + noise).detach().requires_grad_(True)
+			return X_.detach()
+
+	def predict(self, X):
+		if type(X) is torch.Tensor:
+			X_ = X.clone().detach()
+		else:
+			X_ = torch.tensor(X, dtype=torch.float, device=self._device)
+		return self._model(X_).detach().cpu().numpy().reshape(-1)
+
+	def predict_attack(self, X, y=None, method="FGSM", eps=0.1):
+		X_ = self.AdvExp(X, y, method=method, eps=eps)
+		return self._model(X_).detach().cpu().numpy().reshape(-1)
+
+	def metrics(self, X, y, s=None):
+		y_pred = self.predict(X)
+		metric = Metric(true=y, pred=y_pred)
+		if s is not None:
+			acc = metric.accuracy()
+			disp = metric.positive_disparity(s=s)
+			return round(acc,6), round(disp,6)
+		else:
+			return round(metric.accuracy(),6)
+
+	def metrics_attack(self, X, y, s=None, method="FGSM", use_y=True):
+		if use_y:
+			y_pred = self.predict_attack(X, y, method=method)
+		else:
+			y_pred = self.predict_attack(X, None, method=method)
+		metric = Metric(true=y, pred=y_pred)
+		if s is not None:
+			acc = metric.accuracy()
+			disp = metric.positive_disparity(s=s)
+			return round(acc,6), round(disp,6)
+		else:
+			return round(metric.accuracy(),6)
 
 if __name__=='__main__':
 	from utils import load_split

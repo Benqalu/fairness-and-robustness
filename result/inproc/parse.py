@@ -3,12 +3,14 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 class InProcessDrawer(object):
-	def __init__(self):
+	def __init__(self, method='FGSM'):
 		data = {}
-		for i in range(1,6):
-			f=gzip.open('RnF_%d.txt.gz'%i,'rt')
+		for i in range(1,12):
+			f=gzip.open('./%s/RnF_%d.txt.gz'%(method, i),'rt')
 			for line in f:
 				obj = json.loads(line)
+				print(obj['wR'], obj['wF'])
+				print(obj['angle_rf'])
 				combo = (obj['data'], obj['attr'], obj['wR'], obj['wF'])
 				if combo not in data:
 					data[combo]={}
@@ -43,6 +45,11 @@ class InProcessDrawer(object):
 				elif y_axis=='Accuracy_Attack':
 					y.append(self.data[item]['test_attack'][0])
 			plt.plot(x,y[:len(x)],label='wF=%.2f'%wF_)
+			print('wF=%.1f'%wF_, end='')
+			for i in range(0,len(x)):
+				print((x[i], y[i]), end=' ')
+			print()
+
 		plt.xlabel('wR')
 		plt.ylabel(y_axis)
 		plt.legend()

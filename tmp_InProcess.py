@@ -21,11 +21,11 @@ class FaroInProc(TorchNeuralNetworks):
 		# self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 		self._device = torch.device("cpu")
 
-	def loss_fairness(self, y, y_pred, c):
-		return torch.abs(torch.sum((y-y_pred) * c))
+	def loss_fairness(self, y_pred, y, c):
+		return torch.abs(torch.sum(torch.square(y_pred)*y * c))
 
-	def loss_robustness_fgsm(self, g, paritial=True):
-		noise = torch.sign(g)
+	def loss_robustness_fgsm(self, paritial=True):
+		noise = torch.sign(self._X.grad).detach()
 		if not paritial:
 			X_adv = (self._X + self._epsilon * noise).detach()
 			y_adv_pred = self._model(X_adv)
@@ -33,6 +33,21 @@ class FaroInProc(TorchNeuralNetworks):
 		else:
 			X_adv = (self._X[self._idx] + self._epsilon * noise[self._idx]).detach()
 			y_adv_pred = self._model(X_adv)
+			return self._loss_func(y_adv_pred, self._y[self._idx])
+
+	def loss_robustness_pgd(self, paritial=True):
+		noise = torch.sign(self._X.grad).detach()
+		X_adv = self._X.clone().detach().requires_grad_(True)
+		for i in range(0,10):
+			X_adv = (X_adv + self._epsilon*0.1*noise).detach().requires_grad_(True)
+			self._loss_func(self._model(X_adv), self._y).backward()
+			noise = torch.sign(X_adv).detach()
+		X_adv.detach_()
+		if not paritial:
+			y_adv_pred = self._model(X_adv)
+			return self._loss_func(y_adv_pred, self._y)
+		else:
+			y_adv_pred = self._model(X_adv[self._idx])
 			return self._loss_func(y_adv_pred, self._y[self._idx])
 
 	def fit(self, X, y, s=None, wR=0.0, wF=0.0, test=None, rep=False):
@@ -87,15 +102,15 @@ class FaroInProc(TorchNeuralNetworks):
 			loss_u = self._loss_func(y_pred, self._y)
 
 			if s is not None:
-				loss_f = self.loss_fairness(y = self._y, y_pred = y_pred, c = self._c)
+				loss_f = self.loss_fairness(y_pred, self._y, self._c)
 			else:
 				loss_f = None
 
 			if self._X.grad is not None:
 				if self._method == "FGSM":
-					loss_r = self.loss_robustness_fgsm(g=self._X.grad, paritial=True)
+					loss_r = self.loss_robustness_fgsm(paritial=True)
 				elif self._method == "PGD":
-					pass
+					loss_r = self.loss_robustness_pgd(paritial=True)
 				else:
 					raise RuntimeError("Method must be FGSM or PGD.")
 				self._X.grad = None
@@ -148,9 +163,9 @@ class FaroInProc(TorchNeuralNetworks):
 
 				optim.zero_grad()
 				if self._method == "FGSM":
-					loss_r = self.loss_robustness_fgsm(self._X.grad, paritial=False)
+					loss_r = self.loss_robustness_fgsm(paritial=False)
 				elif self._method == "PGD":
-					pass
+					loss_r = self.loss_robustness_pgd(paritial=True)
 				else:
 					raise RuntimeError("Method must be FGSM or PGD.")
 				loss_r.backward()
@@ -209,8 +224,11 @@ def experiments(data, attr, method="FGSM", wR=0.0, wF=0.0, seed=None, suffix="")
 	report["wF"] = wF
 	report["seed"] = seed
 
-	print(model.metrics(train['X'], train['y'], train['s']))
 	print(model.metrics(test['X'], test['y'], test['s']))
+
+	# f = gzip.open(f"./result/inproc/RnF_{suffix}.txt.gz", "at")
+	# f.write(json.dumps(report) + "\n")
+	# f.close()
 
 
 if __name__ == "__main__":
@@ -228,7 +246,7 @@ if __name__ == "__main__":
 		attr = "race"
 		method = "FGSM"
 		wR = 0.0
-		wF = 0.5
+		wF = 1.0
 		suffix = ""
 
 	seed = int(time.time())

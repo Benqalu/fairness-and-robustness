@@ -118,7 +118,12 @@ class PreProcFlip(object):
 			"iter": [],
 		}
 
-		model = TorchNNCore(inps=X.shape[1], hiddens=[128], seed=self._seed)
+		model = TorchNNCore(
+			inps=X.shape[1],
+			hiddens=[128],
+			seed=self._seed,
+			hidden_activation=torch.nn.LeakyReLU,
+		)
 		optim = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=1e-4)
 		loss_func = torch.nn.BCELoss()
 		credit = {}
@@ -174,26 +179,33 @@ class PreProcFlip(object):
 			X.grad = None
 			y_pred = model(X)
 
+			params = list(model.parameters())[-2]
+
 			loss_f = self._DISPLoss(c_train, y_pred)
-			grad_w_F = gradient(loss_f, model.parameters(), retain_graph=True)
-			grad_w_F = torch.hstack([torch.flatten(item) for item in grad_w_F])
+			grad_w_F = (
+				gradient(loss_f, params, retain_graph=True)[0][0].detach().numpy()
+			)  # 1
 
 			loss_u = self._BCELoss(y_pred, y)
-			grad_w_U = gradient(loss_u, model.parameters(), retain_graph=True, create_graph=True)
-			grad_w_U = torch.hstack([torch.flatten(item) for item in grad_w_U])
+			grad_w_U = gradient(loss_u, params, retain_graph=True, create_graph=True)[
+				0
+			][0]
+
 			H = []
-			s_time=time.time()
-			for i in tqdm.tqdm(range(0,grad_w_U.shape[0])):
-				grad_w2_U = gradient(grad_w_U[i], model.parameters(), retain_graph=True)
-				grad_w2_U = torch.hstack([torch.flatten(item) for item in grad_w2_U])
+			for i in range(0, grad_w_U.shape[0]):
+				grad_w2_U = gradient(grad_w_U[i], params, retain_graph=True)[0][0]
 				H.append(grad_w2_U.tolist())
 			H = np.array(H)
-			exit()
+			H_inv = np.linalg.inv(H)  # 2
 
-			params = torch.hstack([torch.flatten(item) for item in model.parameters()])
+			grad_yw_U = []
+			for i in range(0, grad_w_U.shape[0]):
+				grad_yiw_U = gradient(grad_w_U[0], y, retain_graph=True)[0].flatten()
+				grad_yw_U.append(grad_yiw_U.tolist())
+			grad_yw_U = np.array(grad_yw_U)  # 3
 
-			grad_u = gradient(loss, params, retain_graph=True, create_graph=True)
-			grad_u_y = gradient(grad_u, y, )
+			influence_to_fairness = np.dot(np.dot(grad_w_F, H_inv), grad_yw_U)
+
 			# END: Influences? of fairness
 
 			# BEGIN: Influences of robustness
@@ -328,7 +340,7 @@ def draw(res):
 
 
 if __name__ == "__main__":
-	model = PreProcFlip("adult", "race", max_iter=100, k=10, credit_lim=3)
+	model = PreProcFlip("adult", "race", max_iter=100, k=100, credit_lim=1, seed=24)
 	res = model.fit_transform()
 	draw(res)
 	plt.show()
