@@ -55,4 +55,4 @@ def run(data, attr, method):
 			print('(%.4f, %.4f)'%(R,F),end='\t')
 		print()
 
-run('compas','sex','FGSM')
+run('compas','sex','PGD')

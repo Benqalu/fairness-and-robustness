@@ -10,7 +10,7 @@ from utils import load_split
 from metric import Metric
 
 class PreProcFlip(object):
-	def __init__(self, data, attr, k=None, seed=None, max_iter=1000):
+	def __init__(self, data, attr, k=None, seed=None, max_iter=1000, wR=0.1, wF=0.1):
 		self._delta = 0.01
 		self._data = data
 		self._attr = attr
@@ -18,6 +18,8 @@ class PreProcFlip(object):
 		self._seed = seed
 		self._max_iter = max_iter
 		self._epsilon = 0.1
+		self._wR = wR
+		self._wF = wF
 		if self._seed is not None:
 			np.random.seed(self._seed)
 			torch.manual_seed(self._seed)
@@ -116,17 +118,23 @@ class PreProcFlip(object):
 			metric = Metric(true=self._train_np['y'], pred=y_pred.detach().numpy().reshape(-1))
 			acc_train_org = metric.accuracy()
 			disp_train_org = metric.positive_disparity(s=self._train_np['s'])
+
+			ranking_utility = np.zeros(self._train['y'].shape[0])
+			ranking_utility[np.argsort(influence_to_utility)] = np.arange(0, self._train['y'].shape[0])
 			# END: Influences of utility
 
 			# BEGIN: Influences? of fairness
-			# if disp_train_org > self._delta:
-			# 	metric = Metric(pred=y_pred.detach().numpy(), true=self._train_np['y_'])
-			# 	disp = metric.positive_disparity(s=self._train_np['s'], absolute=False)
-			# 	influence_to_fairness = np.sign(
-			# 		disp * (self._train_np['s'] - 0.5) * (self._train_np['y_'] - 0.5)
-			# 	) * (0.5 - abs(y_pred_np - 0.5))
-			# else:
-			influence_to_fairness = np.zeros(self._train['X'].shape[0])
+			if disp_train_org > self._delta:
+				metric = Metric(pred=y_pred.detach().numpy(), true=self._train_np['y_'])
+				disp = metric.positive_disparity(s=self._train_np['s'], absolute=False)
+				influence_to_fairness = np.sign(
+					disp * (self._train_np['s'] - 0.5) * (self._train_np['y_'] - 0.5)
+				) * (0.5 - abs(y_pred_np - 0.5))
+			else:
+				influence_to_fairness = np.zeros(self._train['X'].shape[0])
+
+			ranking_fairness = np.zeros(self._train['y'].shape[0])
+			ranking_fairness[np.argsort(influence_to_fairness)] = np.arange(0, self._train['y'].shape[0])
 			# END: Influences? of fairness
 
 			# BEGIN: Influences of robustness
@@ -138,6 +146,9 @@ class PreProcFlip(object):
 			y_grad = gradient(self._BCELoss(y_pred_atk, self._train['y']), self._train['y'])[0].reshape(-1)
 			influence_to_robustness = - y_grad * np.sign(self._train_np['y']-0.5)
 			acc_train_atk = Metric(true=self._train_np['y'], pred=y_pred_atk.detach().numpy().reshape(-1)).accuracy()
+			
+			ranking_robustness = np.zeros(self._train['y'].shape[0])
+			ranking_robustness[np.argsort(influence_to_robustness)] = np.arange(0, self._train['y'].shape[0])
 			# END: Influences of robustness
 
 			print(
@@ -176,12 +187,20 @@ class PreProcFlip(object):
 			# END: Testing
 
 			# BEGIN: Choosing Strategy
+
+			influence_score = influence_to_utility
+			if res["train"]["disp"][-1] > self._delta:
+				influence_score += self._wF * influence_to_fairness
+			if acc_train_atk < acc_train_org:
+				influence_score += self._wR * influence_to_fairness
+
 			influence = np.column_stack(
 				(
-					influence_to_fairness,
-					influence_to_robustness,
-					influence_to_utility,
-					list(range(0, influence_to_utility.shape[0])),
+					# influence_to_fairness,
+					# influence_to_robustness,
+					# influence_to_utility,
+					influence_to_utility + self._wR * influence_to_robustness + self._wF * influence_to_fairness,
+					list(range(0, self._train['y'].shape[0])),
 				)
 			)
 			influence = influence.tolist()
@@ -191,11 +210,9 @@ class PreProcFlip(object):
 			# BEGIN: Flipping
 			rest = self._k
 			for item in influence:
-				i = int(item[3])
+				i = int(item[1])
 				if i in chosen:
 					continue
-				if item[1] > 0 and item[2] > 0:
-					break
 				chosen.add(i)
 				self._train['y_'][i][0] = 1 - self._train['y_'][i][0]
 				self._train_np['y_'][i] = 1 - self._train_np['y_'][i]
@@ -206,8 +223,7 @@ class PreProcFlip(object):
 				break
 			# END: Flipping
 
-			if res["train"]["disp"][-1] <= self._delta:
-				break
+			
 
 		return res
 
@@ -259,7 +275,7 @@ def draw(res):
 
 
 if __name__ == "__main__":
-	model = PreProcFlip("compas", "race", k=100, max_iter=50, seed=24)
+	model = PreProcFlip("compas", "race", k=100, max_iter=50, seed=24, wR=1.0, wF=0.1)
 	res = model.fit_transform()
 	draw(res)
 	plt.show()

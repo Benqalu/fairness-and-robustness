@@ -10,5 +10,4 @@
 		- [x] FSGM
 		- [ ] PGD: still running
 - Pre-Processing:
-	- [x] Preliminary results
-	- [ ] Different lambda: still running
+	- [ ] Different lambda: How to aggregate
