@@ -5,4 +5,5 @@
 	- [x] Impact of robustness on fairness
 	- [x] Combine fairness and robustness sequentially
 - In-Processing:
-	- [x] All combinations of different weight
+	- [x] All combinations of different lambda of fairness & robustness
+	- :white_check_mark: asdf
