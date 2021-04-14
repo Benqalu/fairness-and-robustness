@@ -110,6 +110,7 @@ class PreProcFlip(object):
 			self._train['y'].grad = None
 			self._train['X'].grad = None
 			y_pred = model(self._train['X'])
+			y_pred_np = y_pred.detach().numpy().reshape(-1)
 			y_grad = gradient(self._BCELoss(y_pred, self._train['y']), self._train['y'])[0].reshape(-1)
 			influence_to_utility = -y_grad * np.sign(self._train_np['y'] - 0.5)
 			metric = Metric(true=self._train_np['y'], pred=y_pred.detach().numpy().reshape(-1))
@@ -118,28 +119,25 @@ class PreProcFlip(object):
 			# END: Influences of utility
 
 			# BEGIN: Influences? of fairness
-			if disp_train_org > self._delta:
-				metric = Metric(pred=y_pred.detach().numpy(), true=self._train_np['y_'])
-				disp = metric.positive_disparity(s=self._train_np['s'], absolute=False)
-				influence_to_fairness = np.sign(
-					disp * (self._train_np['s'] - 0.5) * (self._train_np['y_'] - 0.5)
-				)
-			else:
-				influence_to_fairness = np.zeros(self._train['X'].shape[0])
+			# if disp_train_org > self._delta:
+			# 	metric = Metric(pred=y_pred.detach().numpy(), true=self._train_np['y_'])
+			# 	disp = metric.positive_disparity(s=self._train_np['s'], absolute=False)
+			# 	influence_to_fairness = np.sign(
+			# 		disp * (self._train_np['s'] - 0.5) * (self._train_np['y_'] - 0.5)
+			# 	) * (0.5 - abs(y_pred_np - 0.5))
+			# else:
+			influence_to_fairness = np.zeros(self._train['X'].shape[0])
 			# END: Influences? of fairness
 
 			# BEGIN: Influences of robustness
-			noise = (torch.sign(X.grad) * self._epsilon).clone().detach()
-			X.grad = None
-			y.grad = None
-			y_pred_atk = model(X+noise)
-			loss = self._BCELoss(y_pred_atk, y)
-			loss.backward()
-			y_grad = y.grad.numpy().reshape(-1)
-			influence_to_robustness = - y_grad * np.sign(y_np-0.5)
-			acc_train_atk = Metric(true=y_np, pred=y_pred_atk.detach().numpy().reshape(-1)).accuracy()
-			acc_train_atk = -1.0
-			influence_to_robustness = np.zeros(influence_to_utility.shape[0])
+			self._train['X'].grad = None
+			self._train['y'].grad = None
+			y_pred = model(self._train['X'])
+			noise = torch.sign(gradient(self._BCELoss(y_pred, self._train['y']), self._train['X'])[0])
+			y_pred_atk = model(self._train['X'] + 0.1 * noise)
+			y_grad = gradient(self._BCELoss(y_pred_atk, self._train['y']), self._train['y'])[0].reshape(-1)
+			influence_to_robustness = - y_grad * np.sign(self._train_np['y']-0.5)
+			acc_train_atk = Metric(true=self._train_np['y'], pred=y_pred_atk.detach().numpy().reshape(-1)).accuracy()
 			# END: Influences of robustness
 
 			print(

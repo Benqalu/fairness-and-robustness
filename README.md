@@ -4,7 +4,10 @@
 	- [x] Impact of fairness on robustness
 	- [x] Impact of robustness on fairness
 	- [x] Combine fairness and robustness sequentially
-	- [ ] <span style="color:red"> Review the correctness of DIR, results are not as expected </span>
+	- [ ] Review the correctness of DIR, results are not as expected
 - In-Processing:
-	- [x] All combinations of different lambda of fairness & robustness
-	- :white_check_mark: asdf
+	- [ ] All combinations of different lambda of fairness & robustness
+		- [x] FSGM
+		- [ ] PGD: still running
+- Pre-Processing:
+	- [ ] Different lambda: still running
