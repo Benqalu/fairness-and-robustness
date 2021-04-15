@@ -12,8 +12,7 @@ import tensorflow as tf
 # from aif360.datasets import AdultDataset, CompasDataset
 from aif360.algorithms.preprocessing.reweighing import Reweighing
 from aif360.algorithms.inprocessing import PrejudiceRemover
-from ExistingApproaches.adversarial_debiasing import AdversarialDebiasing
-from aif360.algorithms.preprocessing import DisparateImpactRemover
+from ExistingApproaches.preprocessing import DisparateImpactRemover
 
 from TorchAdversarial import TorchAdversarial
 from metric import Metric
