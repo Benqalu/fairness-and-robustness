@@ -12,7 +12,7 @@ import tensorflow as tf
 # from aif360.datasets import AdultDataset, CompasDataset
 from aif360.algorithms.preprocessing.reweighing import Reweighing
 from aif360.algorithms.inprocessing import PrejudiceRemover
-from ExistingApproaches.preprocessing import DisparateImpactRemover
+from ExistingApproaches.disparate_impact_remover import DisparateImpactRemover
 
 from TorchAdversarial import TorchAdversarial
 from metric import Metric
@@ -135,12 +135,12 @@ if __name__=='__main__':
 		seed = int(time.time())
 		print('Seed is %d.'%seed)
 	else:
-		data = 'compas'
-		attr = 'race'
+		data = 'adult'
+		attr = 'sex'
 		method = 'FGSM'
-		func = fairness_reweighing
-		wF = 0.3
-		wR = 0.1
+		func = fairness_disparate
+		wF = 1.0
+		wR = 0.0
 		seed = None
 
 

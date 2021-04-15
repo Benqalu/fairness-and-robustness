@@ -140,7 +140,7 @@ class DisparateImpactRemover(Transformer):
 
         repaired = dataset.copy()
 
-        repair_count = int(self.repair_level*0.5*dataset.features.shape[0])
+        repair_count = int(self.repair_level*0.75*dataset.features.shape[0])
 
         if repair_count > 0:
 
