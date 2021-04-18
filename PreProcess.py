@@ -10,16 +10,15 @@ from utils import load_split
 from metric import Metric
 
 class PreProcFlip(object):
-	def __init__(self, data, attr, k=None, seed=None, max_iter=1000, wR=0.1, wF=0.1):
-		self._delta = 0.01
+	def __init__(self, data, attr, method='FGSM', k=10, seed=None, max_iter=1000, dR=0.1, dF=0.1):
 		self._data = data
 		self._attr = attr
-		self._k = k
 		self._seed = seed
 		self._max_iter = max_iter
 		self._epsilon = 0.1
-		self._wR = wR
-		self._wF = wF
+		self._dR = dR
+		self._dF = dF
+		self._method = method
 		if self._seed is not None:
 			np.random.seed(self._seed)
 			torch.manual_seed(self._seed)
@@ -27,9 +26,13 @@ class PreProcFlip(object):
 		self._train_np, self._test_np = load_split(data, attr)
 		self._train_np['y_'] = self._train_np['y'].copy()
 
-		if self._k is None:
-			self._k = np.ceil(self._train_np['X'].shape[0] * 0.003).astype(int)
-		print(self._train_np['X'].shape[0])
+		if type(k) is int:
+			self._k = k
+		elif type(k) is float:
+			self._k = np.ceil(self._train_np['X'].shape[0] * k).astype(int)
+		else:
+			raise ValueError('k must be float or int')
+
 		print('Flipping %.4f%% (%d) records every epoch'%(self._k*100.0/self._train_np['X'].shape[0], self._k))
 
 		self._train = {
@@ -57,6 +60,14 @@ class PreProcFlip(object):
 		metric = Metric(true=y.reshape(-1).tolist(), pred=y_pred.reshape(-1).tolist())
 		return metric.accuracy(), metric.positive_disparity(s=s)
 
+	def _Scaler(self, a):
+		a_min = a.min()
+		a_max = a.max()
+		if a_min == a_max:
+			return a
+		else:
+			return (a - a_min)/(a_max - a_min)
+
 	def fit_transform(self, test_output=True):
 
 		res = {
@@ -78,7 +89,7 @@ class PreProcFlip(object):
 			inps=self._train['X'].shape[1],
 			hiddens=[128],
 			seed=self._seed,
-			hidden_activation=torch.nn.LeakyReLU,
+			hidden_activation=torch.nn.ReLU,
 		)
 
 		optim = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=1e-4)
@@ -89,7 +100,7 @@ class PreProcFlip(object):
 		for it in range(0, self._max_iter):
 
 			# BEGIN: Train modified model
-			tolerence = 20
+			tolerence = 10
 			last_loss = None
 			for epoch in range(0, 1000):
 				optim.zero_grad()
@@ -113,42 +124,53 @@ class PreProcFlip(object):
 			self._train['X'].grad = None
 			y_pred = model(self._train['X'])
 			y_pred_np = y_pred.detach().numpy().reshape(-1)
-			y_grad = gradient(self._BCELoss(y_pred, self._train['y']), self._train['y'])[0].reshape(-1)
+			y_grad = gradient(self._BCELoss(y_pred, self._train['y']), self._train['y'])[0].detach().numpy().reshape(-1)
 			influence_to_utility = -y_grad * np.sign(self._train_np['y'] - 0.5)
 			metric = Metric(true=self._train_np['y'], pred=y_pred.detach().numpy().reshape(-1))
 			acc_train_org = metric.accuracy()
 			disp_train_org = metric.positive_disparity(s=self._train_np['s'])
 
 			ranking_utility = np.zeros(self._train['y'].shape[0])
-			ranking_utility[np.argsort(influence_to_utility)] = np.arange(0, self._train['y'].shape[0])
+			ranking_utility[np.argsort(influence_to_utility)] = np.arange(0, self._train['y'].shape[0]) + 1
+			influence_to_utility = self._Scaler(influence_to_utility)
 			# END: Influences of utility
 
 			# BEGIN: Influences? of fairness
-			if disp_train_org > self._delta:
-				metric = Metric(pred=y_pred.detach().numpy(), true=self._train_np['y_'])
-				disp = metric.positive_disparity(s=self._train_np['s'], absolute=False)
-				influence_to_fairness = np.sign(
-					disp * (self._train_np['s'] - 0.5) * (self._train_np['y_'] - 0.5)
-				) * (0.5 - abs(y_pred_np - 0.5))
-			else:
-				influence_to_fairness = np.zeros(self._train['X'].shape[0])
+			metric = Metric(pred=y_pred.detach().numpy(), true=self._train_np['y_'])
+			disp = metric.positive_disparity(s=self._train_np['s'], absolute=False)
+			influence_to_fairness = np.sign(
+				disp * (self._train_np['s'] - 0.5) * (self._train_np['y_'] - 0.5)
+			)
+			# ) * (0.5 - abs(y_pred_np - 0.5))
+			if influence_to_fairness.min() >= 0:
+				break
 
 			ranking_fairness = np.zeros(self._train['y'].shape[0])
-			ranking_fairness[np.argsort(influence_to_fairness)] = np.arange(0, self._train['y'].shape[0])
+			ranking_fairness[np.argsort(influence_to_fairness)] = np.arange(0, self._train['y'].shape[0]) + 1
+			influence_to_fairness = self._Scaler(influence_to_fairness)
 			# END: Influences? of fairness
-
-			# BEGIN: Influences of robustness
-			self._train['X'].grad = None
-			self._train['y'].grad = None
-			y_pred = model(self._train['X'])
-			noise = torch.sign(gradient(self._BCELoss(y_pred, self._train['y']), self._train['X'])[0])
-			y_pred_atk = model(self._train['X'] + 0.1 * noise)
-			y_grad = gradient(self._BCELoss(y_pred_atk, self._train['y']), self._train['y'])[0].reshape(-1)
-			influence_to_robustness = - y_grad * np.sign(self._train_np['y']-0.5)
-			acc_train_atk = Metric(true=self._train_np['y'], pred=y_pred_atk.detach().numpy().reshape(-1)).accuracy()
+		
 			
-			ranking_robustness = np.zeros(self._train['y'].shape[0])
-			ranking_robustness[np.argsort(influence_to_robustness)] = np.arange(0, self._train['y'].shape[0])
+			# BEGIN: Influences of robustness
+			if self._method == 'FGSM':
+				self._train['X'].grad = None
+				self._train['y'].grad = None
+				y_pred = model(self._train['X'])
+				noise = torch.sign(gradient(self._BCELoss(y_pred, self._train['y']), self._train['X'])[0])
+				y_pred_atk = model(self._train['X'] + 0.1 * noise)
+				y_grad = gradient(self._BCELoss(y_pred_atk, self._train['y']), self._train['y'])[0].detach().numpy().reshape(-1)
+				influence_to_robustness = - y_grad * np.sign(self._train_np['y']-0.5)
+				acc_train_atk = Metric(true=self._train_np['y'], pred=y_pred_atk.detach().numpy().reshape(-1)).accuracy()
+				if influence_to_robustness.min() >= 0:
+					break
+
+				ranking_robustness = np.zeros(self._train['y'].shape[0])
+				ranking_robustness[np.argsort(influence_to_robustness)] = np.arange(0, self._train['y'].shape[0]) + 1
+				influence_to_robustness = self._Scaler(influence_to_robustness)
+			elif self._method == 'PGD':
+				pass
+			else:
+				raise RuntimeError
 			# END: Influences of robustness
 
 			print(
@@ -159,6 +181,16 @@ class PreProcFlip(object):
 			res["train"]["orig"].append(acc_train_org)
 			res["train"]["attk"].append(acc_train_atk)
 			res["train"]["disp"].append(disp_train_org)
+
+			Mode = None
+			if (1.0 - acc_train_atk) > self._dR and acc_train_atk < acc_train_org - 0.005:
+				influence_score = influence_to_robustness
+				Mode = 'Robustness'
+			elif disp_train_org > self._dF:
+				influence_score = influence_to_fairness
+				Mode = 'Fairness'
+			else:
+				Mode = None
 
 			# BEGIN: Testing
 			if test_output:
@@ -178,28 +210,26 @@ class PreProcFlip(object):
 				).accuracy()
 
 				print(
-					"Test: (%.4f, %.4f, %.4f)"
-					% (acc_test_org, acc_test_atk, disp_test_org)
+					"Test: (%.4f, %.4f, %.4f), Mode: %s"
+					% (acc_test_org, acc_test_atk, disp_test_org, Mode)
 				)
 				res["test"]["orig"].append(acc_test_org)
 				res["test"]["attk"].append(acc_test_atk)
 				res["test"]["disp"].append(disp_test_org)
 			# END: Testing
 
-			# BEGIN: Choosing Strategy
+			
 
-			influence_score = influence_to_utility
-			if res["train"]["disp"][-1] > self._delta:
-				influence_score += self._wF * influence_to_fairness
-			if acc_train_atk < acc_train_org:
-				influence_score += self._wR * influence_to_fairness
+			# BEGIN: Choosing Strategy
+			if Mode is None:
+				break
 
 			influence = np.column_stack(
 				(
 					# influence_to_fairness,
 					# influence_to_robustness,
 					# influence_to_utility,
-					influence_to_utility + self._wR * influence_to_robustness + self._wF * influence_to_fairness,
+					influence_score,
 					list(range(0, self._train['y'].shape[0])),
 				)
 			)
@@ -222,9 +252,7 @@ class PreProcFlip(object):
 			if rest == self._k:  # No eligible flipping is available
 				break
 			# END: Flipping
-
 			
-
 		return res
 
 
@@ -236,11 +264,11 @@ def draw(res):
 	data = np.hstack(
 		[
 			np.array(res["train"]["orig"]).reshape(-1, 1),
-			# np.array(res["train"]["attk"]).reshape(-1, 1),
+			np.array(res["train"]["attk"]).reshape(-1, 1),
 		]
 	)
 	df_train = DataFrame(
-		data, index=res["iter"], columns=["Accuracy_Orig."]#, "Accuracy_Attk."]
+		data, index=res["iter"], columns=["Accuracy_Orig.", "Accuracy_Attk."]
 	)
 	main_ax = df_train.plot(ax=ax[0])
 	main_ax.set_xlabel("Training epochs")
@@ -255,11 +283,11 @@ def draw(res):
 	data = np.hstack(
 		[
 			np.array(res["test"]["orig"]).reshape(-1, 1),
-			# np.array(res["test"]["attk"]).reshape(-1, 1),
+			np.array(res["test"]["attk"]).reshape(-1, 1),
 		]
 	)
 	df_test = DataFrame(
-		data, index=res["iter"], columns=["Accuracy_Orig."]#, "Accuracy_Attk."]
+		data, index=res["iter"], columns=["Accuracy_Orig.", "Accuracy_Attk."]
 	)
 	main_ax = df_test.plot(ax=ax[1])
 	main_ax.set_xlabel("Training epochs")
@@ -275,7 +303,42 @@ def draw(res):
 
 
 if __name__ == "__main__":
-	model = PreProcFlip("compas", "race", k=100, max_iter=50, seed=24, wR=1.0, wF=0.1)
+
+	import sys
+	if len(sys.argv)>=2:
+		data = sys.argv[1]
+		attr = sys.argv[2]
+		method = sys.argv[3]
+		dF = round(float(sys.argv[4]), 2)
+		dR = round(float(sys.argv[5]), 2)
+		k = 0.0015
+	else:
+		data = 'compas'
+		attr = 'race'
+		method = 'FGSM'
+		dF = 0.03
+		dR = 0.4
+		k = 0.0015
+
+	import time
+	seed = int(time.time())
+
+	print((data, attr, method, dF, dR))
+	print('Seed is %d'%seed)
+
+	model = PreProcFlip(data, attr, k=k, max_iter=500, seed=seed, dR=dR, dF=dF)
 	res = model.fit_transform()
-	draw(res)
-	plt.show()
+
+	res['data'] = data
+	res['attr'] = attr
+	res['method'] = method
+	res['dF'] = dF
+	res['dR'] = dR
+	res['k'] = k
+	res['seed'] = seed
+
+	import json
+
+	f=open(f'./result/preproc/FnR_Pre.txt','a')
+	f.write(json.dumps(res)+'\n')
+	f.close()
