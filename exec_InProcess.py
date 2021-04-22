@@ -1,36 +1,45 @@
 import os, time, json, gzip
 
-wR_list = [
-	0.00,
-	0.01,
-	0.02,
-	0.03,
-	0.04,
-	0.05,
-	0.06,
-	0.07,
-	0.08,
-	0.09,
-	0.10,
-	0.20,
-	0.30,
-	0.40,
-	0.50,
-	0.60,
-	0.70,
-	0.80,
-	0.90,
-	1.00,
-]
-wF_list = [round(0.05 * i, 2) for i in range(0, 21)]
+# wR_list = [
+# 	0.00,
+# 	0.01,
+# 	0.02,
+# 	0.03,
+# 	0.04,
+# 	0.05,
+# 	0.06,
+# 	0.07,
+# 	0.08,
+# 	0.09,
+# 	0.10,
+# 	0.20,
+# 	0.30,
+# 	0.40,
+# 	0.50,
+# 	0.60,
+# 	0.70,
+# 	0.80,
+# 	0.90,
+# 	1.00,
+# ]
+# wF_list = [round(0.05 * i, 2) for i in range(0, 21)]
+
+turn = 10
+wR_list = [0.1, 1.0]
+wF_list = [0.1, 1.0]
+data_list = ["compas", "adult"]
+attr_list = ["race", "sex"]
+method_list = ['PGD']
 
 count = 0
-allct = 10 * 2 * 2 * 1 * len(wR_list) * len(wF_list)
+allct = turn * len(data_list) * len(attr_list) * len(method_list) * len(wR_list) * len(wF_list)
 runtime = 0.0
+
+print(f'There are {allct} tasks in total.')
 
 executed = {}
 
-for it in range(1, 11):
+for it in range(1, turn+1):
 	if os.path.exists("./result/inproc/RnF_%d.txt.gz" % it):
 		f = gzip.open("./result/inproc/RnF_%d.txt.gz" % it)
 		for line in f:
@@ -42,7 +51,7 @@ for it in range(1, 11):
 			allct -= 1
 		f.close()
 
-for it in range(1, 31):
+for it in range(1, 11):
 	try:
 		for data in ["compas", "adult"]:
 			for attr in ["race", "sex"]:

@@ -87,7 +87,7 @@ class PreProcFlip(object):
 
 		model = TorchNNCore(
 			inps=self._train['X'].shape[1],
-			hiddens=[128],
+			hiddens=[],
 			seed=self._seed,
 			hidden_activation=torch.nn.ReLU,
 		)

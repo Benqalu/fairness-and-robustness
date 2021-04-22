@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
-# from aif360.datasets import AdultDataset, CompasDataset
+from aif360.datasets import AdultDataset, CompasDataset
 from aif360.algorithms.preprocessing.reweighing import Reweighing
 from aif360.algorithms.inprocessing import PrejudiceRemover
 from ExistingApproaches.disparate_impact_remover import DisparateImpactRemover
@@ -56,6 +56,39 @@ def load_data(data,attr):
 			unprivileged_groups = [{'race': 0}]
 		else:
 			raise RuntimeError('Unknown attr.')
+	elif data=='hospital':
+		if attr == "sex":
+			privileged_groups = [{'sex': 1}]
+			unprivileged_groups = [{'sex': 0}]
+		elif attr == "race":
+			privileged_groups = [{'race': 1}]
+			unprivileged_groups = [{'race': 0}]
+		else:
+			raise RuntimeError('Unknown attr.')
+		with gzip.open(f'./data/{data}_train.pkl.gz', 'rb') as handle:
+			data_train = pickle.load(handle)
+		with gzip.open(f'./data/{data}_test.pkl.gz', 'rb') as handle:
+			data_test = pickle.load(handle)
+		# frame = AdultDataset()
+		# df= pd.read_csv(f'./data/{data}.csv')
+		# columns = list(df.columns)
+		# dataset = df.to_numpy()
+		# X = dataset[:,:-1]
+		# y = dataset[:,-1]
+		# s_race = dataset[:,columns.index('race')].astype(float)
+		# s_sex = dataset[:,columns.index('sex')].astype(float)
+
+		# frame.favorable_label=1.0
+		# frame.feature_names=columns[:-1]
+		# frame.features=X
+		# frame.label_names=columns[-1:]
+		# frame.labels=y.reshape(-1,1).astype(float)
+		# frame.instance_names=[str(i) for i in range(0,X.shape[0])]
+		# frame.instance_weights=np.ones(X.shape[0])
+		# # frame.metadata=None
+		# frame.protected_attributes=np.hstack([s_race.reshape(-1,1),s_sex.reshape(-1,1)])
+		# frame.scores=y.reshape(-1,1).astype(float)
+		# data_train, data_test = frame.split([0.7], shuffle=True)
 	else:
 		raise RuntimeError('Unknown data.')
 
@@ -111,6 +144,7 @@ def fairness_disparate(data, attr, method='FGSM', mitigation=True, wF=1.0, wR=0.
 
 	model = TorchAdversarial(lr=0.01, n_epoch=500, method=method, hiddens=[128], seed=global_seed)
 	model.fit(X,y,s,weight,wR=wR)
+
 	report={
 		'train':model.metrics(X=X,y=y,s=s),
 		'test':model.metrics(X=X_test,y=y_test,s=s_test),
@@ -120,6 +154,7 @@ def fairness_disparate(data, attr, method='FGSM', mitigation=True, wF=1.0, wR=0.
 	# print('Testing Acc.:', test_acc)
 	# print('Testing Atk Acc.:', test_adv_acc)
 	return report
+
 
 if __name__=='__main__':
 
@@ -135,13 +170,13 @@ if __name__=='__main__':
 		seed = int(time.time())
 		print('Seed is %d.'%seed)
 	else:
-		data = 'adult'
-		attr = 'sex'
+		data = 'hospital'
+		attr = 'race'
 		method = 'FGSM'
 		func = fairness_disparate
-		wF = 1.0
+		wF = 0.5
 		wR = 0.0
-		seed = None
+		seed = 24
 
 
 	print(data, attr, method, func.__name__, 'wF=%.2f'%wF, 'wR=%.2f'%wR)
@@ -149,18 +184,20 @@ if __name__=='__main__':
 	reset_seed(seed)
 	res=func(data,attr,method=method,wR=wR,wF=wF)
 
-	report={
-		'seed':seed,
-		'data':data,
-		'attr':attr,
-		'method':method,
-		'func':func.__name__,
-		'result':res,
-		'wR':wR,
-		'wF':wF,
-	}
+	print(res)
 
-	f=open('./result/existings/FnR.txt','a')
-	f.write(json.dumps(report)+'\n')
-	f.close()
+	# report={
+	# 	'seed':seed,
+	# 	'data':data,
+	# 	'attr':attr,
+	# 	'method':method,
+	# 	'func':func.__name__,
+	# 	'result':res,
+	# 	'wR':wR,
+	# 	'wF':wF,
+	# }
+
+	# f=open('./result/existings/FnR.txt','a')
+	# f.write(json.dumps(report)+'\n')
+	# f.close()
 

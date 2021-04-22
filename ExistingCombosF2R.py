@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
-# from aif360.datasets import AdultDataset, CompasDataset
+from aif360.datasets import AdultDataset, CompasDataset
 from aif360.algorithms.preprocessing.reweighing import Reweighing
 from aif360.algorithms.inprocessing import PrejudiceRemover
 from ExistingApproaches.adversarial_debiasing import AdversarialDebiasing
@@ -43,12 +43,10 @@ def load_data(data,attr):
 		else:
 			raise RuntimeError('Unknown attr.')
 	elif data=='compas':
-
 		with gzip.open(f'./data/{data}_train.pkl.gz', 'rb') as handle:
 			data_train = pickle.load(handle)
 		with gzip.open(f'./data/{data}_test.pkl.gz', 'rb') as handle:
 			data_test = pickle.load(handle)
-
 		if attr == "sex":
 			privileged_groups = [{'sex': 0}]
 			unprivileged_groups = [{'sex': 1}]
@@ -57,6 +55,35 @@ def load_data(data,attr):
 			unprivileged_groups = [{'race': 0}]
 		else:
 			raise RuntimeError('Unknown attr.')
+	elif data=='hospital':
+		if attr == "sex":
+			privileged_groups = [{'sex': 1}]
+			unprivileged_groups = [{'sex': 0}]
+		elif attr == "race":
+			privileged_groups = [{'race': 1}]
+			unprivileged_groups = [{'race': 0}]
+		else:
+			raise RuntimeError('Unknown attr.')		
+		frame = AdultDataset()
+		df= pd.read_csv(f'./data/{data}_train.pkl.gz')
+		columns = list(dataset.columns)
+		dataset = df.to_numpy()
+		X = dataset[:,:-1]
+		y = dataset[:,-1]
+		s_race = dataset[:,columns.index('race')].astype(float)
+		s_sex = dataset[:,columns.index('sex')].astype(float)
+
+		dataset.favorable_label=1.0
+		dataset.feature_names=columns[:-1]
+		dataset.features=X
+		dataset.label_names=columns[-1:]
+		dataset.labels=y.reshape(-1,1).astype(float)
+		dataset.instance_names=[str(i) for i in range(0,X.shape[0])]
+		dataset.instance_weights=np.ones(X.shape[0])
+		dataset.metadata=None
+		dataset.protected_attributes=np.hstack([s_race.reshape(-1,1),s_sex.reshape(-1,1)])
+		dataset.scores=y.reshape(-1,1).astype(float)
+		data_train, data_test = dataset.split([0.7], shuffle=True)
 	else:
 		raise RuntimeError('Unknown data.')
 
@@ -209,7 +236,7 @@ if __name__=='__main__':
 		seed = int(time.time())
 		print('Seed is %d.'%seed)
 	else:
-		data = 'compas'
+		data = 'hospital'
 		attr = 'race'
 		method = 'FGSM'
 		func = fairness_reweighing
@@ -236,9 +263,9 @@ if __name__=='__main__':
 		'pidx':pidx,
 	}
 
-	f=open('./result/existings/F2R.txt','a')
-	f.write(json.dumps(report)+'\n')
-	f.close()
+	# f=open('./result/existings/F2R.txt','a')
+	# f.write(json.dumps(report)+'\n')
+	# f.close()
 
 
 

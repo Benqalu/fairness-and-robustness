@@ -95,4 +95,4 @@ def accuracy(data, attr):
 			# 	print(' \\\\\n\\hline')
 
 
-accuracy('compas','race')
+angle('adult','race')

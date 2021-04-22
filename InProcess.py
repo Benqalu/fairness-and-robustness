@@ -36,12 +36,11 @@ class FaroInProc(TorchNeuralNetworks):
 			return self._loss_func(y_adv_pred, self._y[self._idx])
 
 	def loss_robustness_pgd(self, paritial=True):
-		noise = torch.sign(self._X.grad).detach()
 		X_adv = self._X.clone().detach().requires_grad_(True)
 		for i in range(0,10):
+			grad_X = torch.autograd.grad(self._loss_func(self._model(X_adv), self._y), X_adv)[0]
+			noise = torch.sign(grad_X).detach()
 			X_adv = (X_adv + self._epsilon*0.1*noise).detach().requires_grad_(True)
-			self._loss_func(self._model(X_adv), self._y).backward()
-			noise = torch.sign(X_adv).detach()
 		X_adv.detach_()
 		if not paritial:
 			y_adv_pred = self._model(X_adv)
@@ -224,6 +223,8 @@ def experiments(data, attr, method="FGSM", wR=0.0, wF=0.0, seed=None, suffix="")
 	report["wF"] = wF
 	report["seed"] = seed
 
+	# print(report)
+
 	# print(model.metrics_attack(test['X'], test['y'], test['s']))
 
 	f = gzip.open(f"./result/inproc/RnF_{suffix}.txt.gz", "at")
@@ -242,11 +243,11 @@ if __name__ == "__main__":
 		wF = float(sys.argv[5])
 		suffix = sys.argv[6]
 	else:
-		data = "adult"
+		data = "compas"
 		attr = "race"
-		method = "FGSM"
-		wR = 0.01
-		wF = 0.1
+		method = "PGD"
+		wR = 0.5
+		wF = 0.5
 		suffix = ""
 
 	seed = int(time.time())

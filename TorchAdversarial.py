@@ -29,7 +29,7 @@ class TorchNNCore(torch.nn.Module):
 		return output
 
 class TorchAdversarial(object):
-	def __init__(self, lr=0.01, n_epoch=1000, method='FGSM', eps=0.1, hiddens=[], hidden_activation=torch.nn.ReLU, seed=None):
+	def __init__(self, lr=0.01, n_epoch=1000, method='FGSM', eps=0.1, hiddens=[], hidden_activation=torch.nn.ReLU, seed=None, l2=0.0):
 		# super(TorchAdversarial, self).__init__(lr=lr, n_epoch=n_epoch, hiddens=hiddens, seed=seed)
 		self._seed = seed
 		self._loss_func=torch.nn.BCELoss(reduction='none')
@@ -40,6 +40,7 @@ class TorchAdversarial(object):
 		self._lr = lr
 		self._n_epoch = n_epoch
 		self._device = torch.device('cpu')
+		self._l2 = l2
 		if self._seed is not None:
 			np.random.seed(self._seed)
 			torch.manual_seed(self._seed)
@@ -56,19 +57,18 @@ class TorchAdversarial(object):
 			return torch.mean(self._loss_func(y_adv_pred, self._y[self._idx]))
 
 	def loss_robustness_pgd(self, paritial=True):
-		noise = torch.sign(self._X.grad).detach()
 		X_adv = self._X.clone().detach().requires_grad_(True)
 		for i in range(0,10):
+			grad_X = torch.autograd.grad(self._loss_func(self._model(X_adv), self._y), X_adv)[0]
+			noise = torch.sign(grad_X).detach()
 			X_adv = (X_adv + self._epsilon*0.1*noise).detach().requires_grad_(True)
-			torch.mean(self._loss_func(self._model(X_adv), self._y)*self._weight).backward()
-			noise = torch.sign(X_adv).detach()
 		X_adv.detach_()
 		if not paritial:
 			y_adv_pred = self._model(X_adv)
-			return torch.mean(self._loss_func(y_adv_pred, self._y))
+			return self._loss_func(y_adv_pred, self._y)
 		else:
 			y_adv_pred = self._model(X_adv[self._idx])
-			return torch.mean(self._loss_func(y_adv_pred, self._y[self._idx]))
+			return self._loss_func(y_adv_pred, self._y[self._idx])
 
 	def fit(self, X, y, s=None, weight=None, wR=0.0):
 
@@ -87,7 +87,7 @@ class TorchAdversarial(object):
 		)
 		optim = torch.optim.Adam(
 			self._model.parameters(),
-			lr=self._lr,  # weight_decay=wR
+			lr=self._lr, weight_decay=self._l2
 		)
 
 		for epoch in tqdm.tqdm(range(self._n_epoch)):
