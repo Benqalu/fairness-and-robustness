@@ -1,21 +1,23 @@
 import os, time, json
 
-turn=50
-
-count=0
-runtime=0.0
-allct=0
-
+turn = 30
 wFs={
 	'fairness_reweighing':[0.0,1.0],
 	'fairness_disparate':[0.0,0.2,0.4,0.6,0.8,1.0],
 }
 wRs=[0.0, 0.01, 0.05, 0.1, 0.5, 1.0]
+data_list = ["compas", "adult", "hospital"]
+attr_list = ["race", "sex"]
+method_list = ['FGSM', 'PGD']
+
+count=0
+runtime=0.0
+allct=0
 
 for it in range(1,turn+1):
-	for data in ['compas','adult']:
-		for attr in ['race','sex']:
-			for method in ['FGSM','PGD']:
+	for data in data_list:
+		for attr in attr_list:
+			for method in method_list:
 				for func in ['fairness_reweighing','fairness_disparate']:#,'fairness_adversarial']:
 					for wF in wFs[func]:
 						for wR in wRs:
@@ -35,9 +37,9 @@ if os.path.exists('./result/existings/FnR.txt'):
 
 for it in range(1,turn+1):
 	try:
-		for data in ['compas','adult']:
-			for attr in ['race','sex']:
-				for method in ['FGSM','PGD']:
+		for data in data_list:
+			for attr in attr_list:
+				for method in method_list:
 					for func in ['fairness_reweighing','fairness_disparate']:#,'fairness_adversarial']:
 						for wF in wFs[func]:
 							for wR in wRs:
