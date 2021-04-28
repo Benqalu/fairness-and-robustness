@@ -9,15 +9,18 @@ allct=0
 dFs = [round(0.01*i,2) for i in range(1,21)]
 dRs = [round(0.05*i,2) for i in range(0,20)]
 
+executed={}
+
 for it in range(1,turn+1):
 	for data in ['compas','adult']:
 		for attr in ['race','sex']:
 			for method in ['FGSM']:#,'PGD']:
 				for dF in dFs:
 					for dR in dRs:
+						combo = (data, attr, method, func, wF, wR)
+						if combo not in executed:
+							executed[combo]=0
 						allct+=1
-
-executed={}
 
 if os.path.exists('./result/preproc/FnR_Pre.txt'):
 	f=open('./result/preproc/FnR_Pre.txt')

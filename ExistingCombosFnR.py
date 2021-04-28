@@ -186,18 +186,18 @@ if __name__=='__main__':
 
 	print(res)
 
-	# report={
-	# 	'seed':seed,
-	# 	'data':data,
-	# 	'attr':attr,
-	# 	'method':method,
-	# 	'func':func.__name__,
-	# 	'result':res,
-	# 	'wR':wR,
-	# 	'wF':wF,
-	# }
+	report={
+		'seed':seed,
+		'data':data,
+		'attr':attr,
+		'method':method,
+		'func':func.__name__,
+		'result':res,
+		'wR':wR,
+		'wF':wF,
+	}
 
-	# f=open('./result/existings/FnR.txt','a')
-	# f.write(json.dumps(report)+'\n')
-	# f.close()
+	f=open('./result/existings/FnR.txt','a')
+	f.write(json.dumps(report)+'\n')
+	f.close()
 

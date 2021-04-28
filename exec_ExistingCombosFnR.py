@@ -14,6 +14,8 @@ count=0
 runtime=0.0
 allct=0
 
+executed={}
+
 for it in range(1,turn+1):
 	for data in data_list:
 		for attr in attr_list:
@@ -21,19 +23,19 @@ for it in range(1,turn+1):
 				for func in ['fairness_reweighing','fairness_disparate']:#,'fairness_adversarial']:
 					for wF in wFs[func]:
 						for wR in wRs:
+							combo = (data, attr, method, func, wF, wR)
+							if combo not in executed:
+								executed[combo]=0
 							allct+=1
-
-executed={}
 
 if os.path.exists('./result/existings/FnR.txt'):
 	f=open('./result/existings/FnR.txt')
 	for line in f:
 		obj=json.loads(line)
 		combo = (obj['data'], obj['attr'], obj['method'], obj['func'], obj['wF'], obj['wR'])
-		if combo not in executed:
-			executed[combo]=0
-		executed[combo]+=1
-		allct-=1
+		if combo in executed:
+			executed[combo]+=1
+			allct-=1
 
 for it in range(1,turn+1):
 	try:

@@ -1,7 +1,7 @@
 import numpy as np
 import gzip, json
 
-def angle(data, attr):
+def angle(data, attr, oR, oF):
 	epochs = None
 	res = {}
 	for i in range(1,12):
@@ -15,7 +15,7 @@ def angle(data, attr):
 			wR = obj['wR']
 			wF = obj['wF']
 			param = (wR, wF)
-			if param!=(0.1, 0.3):
+			if param!=(oR, oF):
 				continue
 			if param not in res:
 				res[param]={
@@ -94,5 +94,4 @@ def accuracy(data, attr):
 			# else:
 			# 	print(' \\\\\n\\hline')
 
-
-angle('adult','race')
+accuracy('compas','race')#, 1.0, 1.0)

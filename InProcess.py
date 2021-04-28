@@ -125,10 +125,10 @@ class FaroInProc(TorchNeuralNetworks):
 			loss.backward()
 			optim.step()
 
-			if rep and (epoch % 5 == 1 or epoch == self._n_epoch - 1):
+			if rep and epoch == self._n_epoch - 1:#(epoch % 5 == 1 or epoch == self._n_epoch - 1):
 
-				tmp_X_grad = self._X.grad
-				self._X.grad = None
+				# tmp_X_grad = self._X.grad
+				# self._X.grad = None
 
 				report["epoch"].append(epoch)
 				report["loss_u"].append(loss_u.tolist() if loss_u is not None else None)
@@ -155,32 +155,32 @@ class FaroInProc(TorchNeuralNetworks):
 					else None
 				)
 
-				optim.zero_grad()
-				loss_u = self._loss_func(self._model(self._X), self._y)
-				loss_u.backward()
-				grad_u = [item.grad.tolist() for item in self._model.parameters()]
+				# optim.zero_grad()
+				# loss_u = self._loss_func(self._model(self._X), self._y)
+				# loss_u.backward()
+				# grad_u = [item.grad.tolist() for item in self._model.parameters()]
 
-				optim.zero_grad()
-				if self._method == "FGSM":
-					loss_r = self.loss_robustness_fgsm(paritial=False)
-				elif self._method == "PGD":
-					loss_r = self.loss_robustness_pgd(paritial=True)
-				else:
-					raise RuntimeError("Method must be FGSM or PGD.")
-				loss_r.backward()
-				grad_r = [item.grad.tolist() for item in self._model.parameters()]
+				# optim.zero_grad()
+				# if self._method == "FGSM":
+				# 	loss_r = self.loss_robustness_fgsm(paritial=False)
+				# elif self._method == "PGD":
+				# 	loss_r = self.loss_robustness_pgd(paritial=True)
+				# else:
+				# 	raise RuntimeError("Method must be FGSM or PGD.")
+				# loss_r.backward()
+				# grad_r = [item.grad.tolist() for item in self._model.parameters()]
 				
 
-				optim.zero_grad()
-				loss_f = self.loss_fairness(self._model(self._X), self._c)
-				loss_f.backward()
-				grad_f = [item.grad.tolist() for item in self._model.parameters()]
+				# optim.zero_grad()
+				# loss_f = self.loss_fairness(self._model(self._X), self._c)
+				# loss_f.backward()
+				# grad_f = [item.grad.tolist() for item in self._model.parameters()]
 
-				report['angle_ur'].append(calc_angle(grad_u, grad_r))
-				report['angle_uf'].append(calc_angle(grad_u, grad_f))
-				report['angle_rf'].append(calc_angle(grad_r, grad_f))
+				# report['angle_ur'].append(calc_angle(grad_u, grad_r))
+				# report['angle_uf'].append(calc_angle(grad_u, grad_f))
+				# report['angle_rf'].append(calc_angle(grad_r, grad_f))
 
-				self._X.grad = tmp_X_grad
+				# self._X.grad = tmp_X_grad
 
 		return report
 
@@ -227,6 +227,8 @@ def experiments(data, attr, method="FGSM", wR=0.0, wF=0.0, seed=None, suffix="")
 
 	# print(model.metrics_attack(test['X'], test['y'], test['s']))
 
+	# print(report)
+
 	f = gzip.open(f"./result/inproc/RnF_{suffix}.txt.gz", "at")
 	f.write(json.dumps(report) + "\n")
 	f.close()
@@ -246,8 +248,8 @@ if __name__ == "__main__":
 		data = "compas"
 		attr = "race"
 		method = "PGD"
-		wR = 0.5
-		wF = 0.5
+		wR = 0.0
+		wF = 0.0
 		suffix = ""
 
 	seed = int(time.time())

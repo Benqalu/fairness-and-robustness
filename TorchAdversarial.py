@@ -59,16 +59,16 @@ class TorchAdversarial(object):
 	def loss_robustness_pgd(self, paritial=True):
 		X_adv = self._X.clone().detach().requires_grad_(True)
 		for i in range(0,10):
-			grad_X = torch.autograd.grad(self._loss_func(self._model(X_adv), self._y), X_adv)[0]
+			grad_X = torch.autograd.grad(torch.mean(self._loss_func(self._model(X_adv), self._y)), X_adv)[0]
 			noise = torch.sign(grad_X).detach()
 			X_adv = (X_adv + self._epsilon*0.1*noise).detach().requires_grad_(True)
 		X_adv.detach_()
 		if not paritial:
 			y_adv_pred = self._model(X_adv)
-			return self._loss_func(y_adv_pred, self._y)
+			return torch.mean(self._loss_func(y_adv_pred, self._y))
 		else:
 			y_adv_pred = self._model(X_adv[self._idx])
-			return self._loss_func(y_adv_pred, self._y[self._idx])
+			return torch.mean(self._loss_func(y_adv_pred, self._y[self._idx]))
 
 	def fit(self, X, y, s=None, weight=None, wR=0.0):
 
