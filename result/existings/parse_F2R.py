@@ -43,6 +43,7 @@ for item in res:
 	res[item]-=res[item][0]
 
 for item in sorted(res.keys()):
+	print(item)
 	for j in range(1,len(res[item])):
 		print('%.04f'%round(res[item][j],4),end='')
 		if j==len(res[item])-1:

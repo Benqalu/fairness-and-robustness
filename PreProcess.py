@@ -48,10 +48,13 @@ class PreProcFlip(object):
 		}
 
 
-	def _BCELoss(self, y_pred, y):
-		return -torch.mean(
-			y * torch.log(0.99 * y_pred) + (1.0 - y) * torch.log(1.0 - 0.99 * y_pred)
-		)
+	def _BCELoss(self, y_pred, y, reduction=True):
+		if reduction=='mean':			
+			return -torch.mean(
+				y * torch.log(0.99 * y_pred) + (1.0 - y) * torch.log(1.0 - 0.99 * y_pred)
+			)
+		else:
+			return y * torch.log(0.99 * y_pred) + (1.0 - y) * torch.log(1.0 - 0.99 * y_pred)
 
 	def _DISPLoss(self, c, y_pred):
 		return torch.square(torch.sum(c * y_pred))
@@ -163,7 +166,6 @@ class PreProcFlip(object):
 				acc_train_atk = Metric(true=self._train_np['y'], pred=y_pred_atk.detach().numpy().reshape(-1)).accuracy()
 				if influence_to_robustness.min() >= 0:
 					break
-
 				ranking_robustness = np.zeros(self._train['y'].shape[0])
 				ranking_robustness[np.argsort(influence_to_robustness)] = np.arange(0, self._train['y'].shape[0]) + 1
 				influence_to_robustness = self._Scaler(influence_to_robustness)
@@ -339,6 +341,6 @@ if __name__ == "__main__":
 
 	import json
 
-	f=open(f'./result/preproc/FnR_Pre.txt','a')
+	f=open(f'./result/preproc/FnR.txt','a')
 	f.write(json.dumps(res)+'\n')
 	f.close()

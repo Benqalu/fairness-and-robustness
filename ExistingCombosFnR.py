@@ -111,8 +111,8 @@ def fairness_reweighing(data, attr, method='FGSM', wF=0.0, wR=0.0):
 	preproc = Reweighing(unprivileged_groups=unprivileged_groups,privileged_groups=privileged_groups)
 	data_train_proc = preproc.fit_transform(data_train)
 
-	X,s,y,weight=get_Xsy(data_train_proc,attr,del_s=False)
-	X_test,s_test,y_test,_=get_Xsy(data_test,attr,del_s=False)
+	X,s,y,weight=get_Xsy(data_train_proc,attr,del_s=True)
+	X_test,s_test,y_test,_=get_Xsy(data_test,attr,del_s=True)
 
 	model = TorchAdversarial(lr=0.01, n_epoch=500, method=method, hiddens=[128], seed=global_seed)
 	if wF == 0.0 or wF is None:
@@ -133,14 +133,14 @@ def fairness_disparate(data, attr, method='FGSM', mitigation=True, wF=1.0, wR=0.
 
 	data_train, data_test, privileged_groups, unprivileged_groups = load_data(data,attr)
 	
-	X_test,s_test,y_test,_=get_Xsy(data_test,attr,del_s=False)
+	X_test,s_test,y_test,_=get_Xsy(data_test,attr,del_s=True)
 
 	if wF==0.0 or wF is None:
-		X,s,y,weight=get_Xsy(data_train,attr,del_s=False)
+		X,s,y,weight=get_Xsy(data_train,attr,del_s=True)
 	else:
 		preproc = DisparateImpactRemover(repair_level=wF,sensitive_attribute=attr)
 		data_train_proc = preproc.fit_transform(data_train)
-		X,s,y,weight=get_Xsy(data_train_proc,attr,del_s=False)
+		X,s,y,weight=get_Xsy(data_train_proc,attr,del_s=True)
 
 	model = TorchAdversarial(lr=0.01, n_epoch=500, method=method, hiddens=[128], seed=global_seed)
 	model.fit(X,y,s,weight,wR=wR)
@@ -170,11 +170,11 @@ if __name__=='__main__':
 		seed = int(time.time())
 		print('Seed is %d.'%seed)
 	else:
-		data = 'hospital'
-		attr = 'race'
+		data = 'compas'
+		attr = 'sex'
 		method = 'FGSM'
 		func = fairness_disparate
-		wF = 0.5
+		wF = 0.0
 		wR = 0.0
 		seed = 24
 

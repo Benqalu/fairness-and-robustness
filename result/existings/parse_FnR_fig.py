@@ -59,8 +59,8 @@ def run(data, attr, method):
 			A = res[param][0]
 			R = 1-res[param][1]
 			F = res[param][2]
-			print(f'({robustness_list.index(rtem)}, {R})',end=' ')
+			print(f'({robustness_list.index(rtem)}, {F})',end=' ')
 		print()
 
 
-run('adult','race','FGSM')
+run('hospital','sex','PGD')

@@ -84,14 +84,48 @@ def accuracy(data, attr):
 	for param in res:
 		res[param]=res[param]['data']/res[param]['count']
 
+	ret = []
+
 	for wF in wF_list:
 		for wR in wR_list:
 			item = res[(wR, wF)]
+			if wF == 0.0:
+				ret.append([item[0], item[1]])
 			print('(%.4f, %.4f, %.4f)'%(item[0], item[1], item[2]), end='')
 			if wR != wR_list[-1]:
 				print('\t',end='')
 		print()
 			# else:
 			# 	print(' \\\\\n\\hline')
+	print(ret)
+	return np.array(ret)
 
-accuracy('compas','race')#, 1.0, 1.0)
+res = accuracy('compas','race')#, 1.0, 1.0)
+
+from matplotlib import pyplot as plt
+plt.scatter(res[:,0], res[:,1], label='InProc', alpha=0.5)
+
+import json
+f=open('../../preproc/Robustness.txt')
+z = json.loads(f.readline())
+f.close()
+
+res=[]
+for i in range(0,len(z['test']['orig'])):
+	res.append([z['test']['orig'][i], z['test']['attk'][i]])
+res = np.array(res)
+
+plt.scatter(res[:,0], res[:,1], label='PreProc', alpha=0.5)
+plt.legend()
+plt.xlabel('Accuracy')
+plt.ylabel('Attacked_Accuracy')
+plt.title(f"{z['data']}_{z['attr']}")
+
+plt.show()
+
+
+
+
+
+
+

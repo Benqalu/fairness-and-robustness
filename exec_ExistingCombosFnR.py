@@ -6,7 +6,7 @@ wFs={
 	'fairness_disparate':[0.0,0.2,0.4,0.6,0.8,1.0],
 }
 wRs=[0.0, 0.01, 0.05, 0.1, 0.5, 1.0]
-data_list = ["hospital"]#["compas", "adult", 
+data_list = ["hospital","compas", "adult"]
 attr_list = ["race", "sex"]
 method_list = ['FGSM', 'PGD']
 

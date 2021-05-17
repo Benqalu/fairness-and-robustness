@@ -6,37 +6,39 @@ count=0
 runtime=0.0
 allct=0
 
+datas = ['compas','hospital']
+attrs = ['race','sex']
+methods = ['FGSM','PGD']
 dFs = [round(0.01*i,2) for i in range(1,21)]
 dRs = [round(0.05*i,2) for i in range(0,20)]
 
 executed={}
 
 for it in range(1,turn+1):
-	for data in ['compas','adult']:
-		for attr in ['race','sex']:
-			for method in ['FGSM']:#,'PGD']:
+	for method in methods:
+		for data in datas:
+			for attr in attrs:
 				for dF in dFs:
 					for dR in dRs:
-						combo = (data, attr, method, func, wF, wR)
+						combo = (data, attr, method, dF, dR)
 						if combo not in executed:
 							executed[combo]=0
 						allct+=1
 
-if os.path.exists('./result/preproc/FnR_Pre.txt'):
-	f=open('./result/preproc/FnR_Pre.txt')
+if os.path.exists('./result/preproc/FnR.txt'):
+	f=open('./result/preproc/FnR.txt')
 	for line in f:
 		obj=json.loads(line)
 		combo = (obj['data'], obj['attr'], obj['method'], obj['dF'], obj['dR'])
-		if combo not in executed:
-			executed[combo]=0
-		executed[combo]+=1
-		allct-=1
+		if combo in executed:
+			executed[combo]+=1
+			allct-=1
 
 for it in range(1,turn+1):
 	try:
-		for data in ['compas','adult']:
-			for attr in ['race','sex']:
-				for method in ['FGSM']:#,'PGD']:
+		for method in methods:
+			for data in datas:
+				for attr in attrs:
 					for dF in dFs:
 						for dR in dRs:
 
@@ -49,7 +51,7 @@ for it in range(1,turn+1):
 
 							start_t=time.time()
 
-							os.system('python PreProcess.py %s %s %s %.2f %.2f'%(data, attr, method, dF, dR))
+							os.system('python PreProcessNew.py %s %s %s %.2f %.2f'%(data, attr, method, dF, dR))
 							count+=1
 							time.sleep(1)
 
