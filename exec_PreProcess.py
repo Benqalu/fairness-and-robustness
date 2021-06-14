@@ -12,6 +12,33 @@ methods = ['FGSM','PGD']
 dFs = [round(0.01*i,2) for i in range(1,21)]
 dRs = [round(0.05*i,2) for i in range(0,20)]
 
+ranges={
+	('adult','race'):{
+		'F': [0.0,0.1],
+		'R': [0.15,0.85],
+	},
+	('adult','sex'):{
+		'F': [0.0,0.2]
+		'R': [0.15,0.85],
+	},
+	('compas','race'):{
+		'F': [0.0,0.18],
+		'R': [0.25,0.75],
+	},
+	('compas','sex'):{
+		'F': [0.0,0.03],
+		'R': [0.25,0.75],
+	},
+	('hospital','race'):{
+		'F': [0.0, 0.2],
+		'R': [0.3, 0.7],
+	},
+	('hospital','sex'):{
+		'F': [0.0, 0.2],
+		'R': [0.3, 0.7],
+	},
+}
+
 executed={}
 
 for it in range(1,turn+1):
@@ -20,6 +47,10 @@ for it in range(1,turn+1):
 			for attr in attrs:
 				for dF in dFs:
 					for dR in dRs:
+						if dF<ranges[(data,attr)]['F'][0] or dF>ranges[(data,attr)]['F'][1]:
+							continue
+						if dR<ranges[(data,attr)]['R'][0] or dR>ranges[(data,attr)]['R'][1]:
+							continue
 						combo = (data, attr, method, dF, dR)
 						if combo not in executed:
 							executed[combo]=0
@@ -41,6 +72,11 @@ for it in range(1,turn+1):
 				for attr in attrs:
 					for dF in dFs:
 						for dR in dRs:
+
+							if dF<ranges[(data,attr)]['F'][0] or dF>ranges[(data,attr)]['F'][1]:
+								continue
+							if dR<ranges[(data,attr)]['R'][0] or dR>ranges[(data,attr)]['R'][1]:
+								continue
 
 							combo = (data, attr, method, dF, dR)
 
