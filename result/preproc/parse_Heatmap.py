@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 from scipy import interpolate
 import seaborn as sns
 
-font = {'size': 18}
+font = {'size': 22}
 
 matplotlib.rc('font', **font)
 
@@ -35,7 +35,11 @@ def collect_colorbar_range(data):
 
 def draw(data, attr, method):
 
-	vmin, vmax = collect_colorbar_range(data)
+	print(data, attr, method)
+
+	vmin = None
+	vmax = None
+	# vmin, vmax = collect_colorbar_range(data)
 
 	plt.clf()
 	res = {}
@@ -63,6 +67,9 @@ def draw(data, attr, method):
 		print(f'{data}_{attr}_{method} Data incomplete, nothing was done.')
 		return
 
+	worst_acc = 1.0
+	wrost_case = None
+
 	Fs = []
 	Rs = []
 	As = []
@@ -72,6 +79,13 @@ def draw(data, attr, method):
 		As.append(res[param][0])
 		Rs.append(res[param][1])
 		Fs.append(res[param][2])
+
+		if res[param][0]<worst_acc:
+			worst_acc=res[param][0]
+			wrost_case=res[param]
+	print(worst_acc)
+	print(wrost_case)
+	exit()
 
 	mapdata = {
 		'A':As,
@@ -105,11 +119,15 @@ def draw(data, attr, method):
 	# plt.colorbar(heatmap)
 
 	fig, ax = plt.subplots()
-	heatmap = ax.pcolor(rr_.ravel(), ff_.ravel(), dataset.to_numpy(), vmin=vmin, vmax=vmax)
+	if vmin==vmax==None:
+		heatmap = ax.pcolor(rr_.ravel(), ff_.ravel(), dataset.to_numpy())
+	else:
+		heatmap = ax.pcolor(rr_.ravel(), ff_.ravel(), dataset.to_numpy(), vmin=vmin, vmax=vmax)
 	cbar = plt.colorbar(heatmap)
+	cbar.set_label('Accuracy')
 	xtick_min = np.floor(np.min(Rs)*100)/100
 	xtick_max = np.ceil(np.max(Rs)*100)/100
-	xtick_bins = 6
+	xtick_bins = 5
 	xtick_step = (xtick_max - xtick_min) / (xtick_bins - 1)
 	xticks = np.round(np.arange(xtick_min, xtick_max, xtick_step), 2).tolist()
 	if xtick_max - xticks[-1] > 0.75*xtick_step:
@@ -117,8 +135,20 @@ def draw(data, attr, method):
 	print(xticks)
 	ax.set_xticks(xticks)
 
-	plt.xlabel('Robustness')
-	plt.ylabel('Fairness')
+	ztick_min = np.ceil(np.min(As)*1000)/1000
+	ztick_max = np.floor(np.max(As)*1000)/1000
+	ztick_bins = 5
+	ztick_step = (ztick_max - ztick_min) / (ztick_bins - 1)
+	zticks = np.round(np.arange(ztick_min, ztick_max, ztick_step), 3).tolist()
+	if ztick_max - zticks[-1] > 0.75*ztick_step:
+		zticks.append(ztick_max)
+	print(zticks)
+	cbar.set_ticks(zticks)
+
+	ax.ticklabel_format(style='sci', scilimits=(-2,2), axis='y')
+
+	plt.xlabel('Robustness score')
+	plt.ylabel('Bias score')
 	plt.tight_layout()
 	plt.savefig(f'heatmap_preproc_{data}_{attr}_{method}.pdf')
 	

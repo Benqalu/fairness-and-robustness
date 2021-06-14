@@ -66,4 +66,4 @@ def run(data, attr, method):
 			print(f'({robustness_list.index(rtem)}, {F})',end=' ')
 		print()
 
-run('hospital','race','FGSM')
+run('hospital','race','PGD')

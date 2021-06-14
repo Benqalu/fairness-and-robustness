@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 from scipy import interpolate
 import seaborn as sns
 
-font = {'size': 18}
+font = {'size': 22}
 
 matplotlib.rc('font', **font)
 
@@ -52,14 +52,15 @@ def draw(data, attr, method):
 			else:
 				only[i][j]=np.nan
 	
-	only*=0.8
+	# only*=0.9
+	diff*=
 
 	# fig, ax = plt.subplots()
-	plt.pcolormesh(rr_.ravel(), ff_.ravel(), diff, cmap='coolwarm', vmin=-1, vmax=1)
+	plt.pcolormesh(rr_.ravel(), ff_.ravel(), diff, cmap='PRGn', vmin=-1, vmax=1)
 	plt.pcolormesh(rr_.ravel(), ff_.ravel(), only, cmap='coolwarm', vmin=-1, vmax=1)
 	# cbar = plt.colorbar(heatmap)
-	xtick_min = np.floor(rmin*100)/100
-	xtick_max = np.ceil(rmax*100)/100
+	xtick_min = np.ceil(rmin*100)/100
+	xtick_max = np.floor(rmax*100)/100
 	xtick_bins = 6
 	xtick_step = (xtick_max - xtick_min) / (xtick_bins - 1)
 	xticks = np.round(np.arange(xtick_min, xtick_max, xtick_step), 2).tolist()
@@ -68,8 +69,8 @@ def draw(data, attr, method):
 	print(xticks)
 	plt.xticks(xticks)
 
-	plt.xlabel('Robustness')
-	plt.ylabel('Fairness')
+	plt.xlabel('Robustness threshold')
+	plt.ylabel('Fairnesss threshold')
 	plt.tight_layout()
 	# plt.show()
 	plt.savefig(f'diffmap_{data}_{attr}_{method}.pdf')

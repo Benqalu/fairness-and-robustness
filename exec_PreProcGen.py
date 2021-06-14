@@ -21,6 +21,16 @@ config = {
 		[0.015, 0.55],
 		[0.02, 0.45],
 	],
+	('hospital', 'race', 'FGSM'): [
+		[0.01, 0.55],
+		[0.015, 0.45],
+		[0.02, 0.35],
+	],
+	('hospital', 'sex', 'FGSM'): [
+		[0.01, 0.55],
+		[0.015, 0.45],
+		[0.02, 0.35],
+	],
 	('adult', 'race', 'PGD'): [
 		[0.01, 0.7],
 		[0.03, 0.6],
@@ -41,6 +51,16 @@ config = {
 		[0.015, 0.55],
 		[0.02, 0.45],
 	],
+	('hospital', 'race', 'PGD'): [
+		[0.01, 0.55],
+		[0.015, 0.45],
+		[0.02, 0.35],
+	],
+	('hospital', 'sex', 'PGD'): [
+		[0.01, 0.55],
+		[0.015, 0.45],
+		[0.02, 0.35],
+	],
 }
 
 def Generate(n=20):
@@ -60,7 +80,7 @@ def Generate(n=20):
 
 	for t in range(0,n):
 		for data, attr, method in config:
-			if method != 'PGD':
+			if data != 'hospital':
 				continue
 			for item in config[(data, attr, method)]:
 				wF, wR = item[0], item[1]
@@ -79,6 +99,8 @@ def Downstreams():
 			continue
 		item = fname.split('.')[0].split('_')
 		data = item[0]
+		if data != 'hospital':
+			continue
 		attr = item[1]
 		method = item[2]
 		seed = int(item[3])
@@ -96,8 +118,8 @@ def Downstreams():
 			print()
 		print()
 
-Generate(n=20)
-# Downstreams()
+# Generate(n=20)
+Downstreams()
 
 
 

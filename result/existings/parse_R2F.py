@@ -59,7 +59,7 @@ for item in res:
 
 
 for item in sorted(res.keys()):
-	print(item)
+	# print(item)
 	for j in range(1,len(res[item]['FGSM'])):
 		print('%.04f'%round(res[item]['FGSM'][j],4),end='')
 		print(' & ',end='')

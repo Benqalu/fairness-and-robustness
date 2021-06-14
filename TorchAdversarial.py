@@ -11,18 +11,18 @@ class TorchNNCore(torch.nn.Module):
 		if seed is not None:
 			torch.manual_seed(seed)
 		struct = [inps] + hiddens + [1]
-		layers = []
+		self.layers = []
 		for i in range(1, len(struct)):
-			layers.append(
+			self.layers.append(
 				torch.nn.Linear(
 					in_features=struct[i - 1], out_features=struct[i], bias=bias
 				)
 			)
 			if i == len(struct) - 1:
-				layers.append(torch.nn.Sigmoid())
+				self.layers.append(torch.nn.Sigmoid())
 			else:
-				layers.append(hidden_activation())
-		self.model = torch.nn.Sequential(*layers)
+				self.layers.append(hidden_activation())
+		self.model = torch.nn.Sequential(*self.layers)
 
 	def forward(self, x):
 		output = self.model(x)

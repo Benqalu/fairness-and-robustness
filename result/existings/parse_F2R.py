@@ -31,7 +31,7 @@ for row in f:
 	if setting not in res:
 		res[setting]=np.zeros(len(fairness_list))
 		count[setting]=np.zeros(len(fairness_list))
-	res[setting][fairness_list.index((wF, func))]+=1.0-obj['result']['test_adv'][0]
+	res[setting][fairness_list.index((wF, func))]+=obj['result']['test_adv'][0]
 	count[setting][fairness_list.index((wF, func))]+=1
 f.close()
 
