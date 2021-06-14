@@ -51,7 +51,7 @@ for it in range(1,turn+1):
 
 							start_t=time.time()
 
-							os.system('python PreProcessNew.py %s %s %s %.2f %.2f'%(data, attr, method, dF, dR))
+							os.system('python PreProcessInflu.py %s %s %s %.2f %.2f'%(data, attr, method, dF, dR))
 							count+=1
 							time.sleep(1)
 
