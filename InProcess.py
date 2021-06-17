@@ -125,7 +125,7 @@ class FaroInProc(TorchNeuralNetworks):
 			loss.backward()
 			optim.step()
 
-			if rep and epoch == self._n_epoch - 1:#(epoch % 5 == 1 or epoch == self._n_epoch - 1):
+			if rep and (epoch % 5 == 1 or epoch == self._n_epoch - 1): # epoch == self._n_epoch - 1:
 
 				# tmp_X_grad = self._X.grad
 				# self._X.grad = None

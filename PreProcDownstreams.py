@@ -183,33 +183,36 @@ class Downstreams(object):
 
 if __name__ == "__main__":
 
-	for data in ['adult', 'compas']:
-		for attr in ['race', 'sex']:
-			fig, ax = plt.subplots()
-			ax.set_title(f'{data}_{attr}')
-			for method in ['FGSM', 'PGD']:
-				downs = Downstreams(data, attr, method)
-				downs.distribution(ax, offset=0 if method=='FGSM' else 6+1)
-			
-			ax.set_xticks(list(range(0,13)))
-			ax.set_xticklabels(
-				['S-Race','S-Race','M-Race','M-Race','W-Race','W-Race','','S-Gender','S-Gender','M-Gender','M-Gender','W-Gender','W-Gender'],
-				rotation = 45,
-				ha='right'
-			)
-			fig.tight_layout()
-			plt.show()
-			exit()
+	action = 'run' # 'run' for running, 'draw' for drawing
 
+	if action == 'draw':
 
+		for data in ['adult', 'compas']:
+			for attr in ['race', 'sex']:
+				fig, ax = plt.subplots()
+				ax.set_title(f'{data}_{attr}')
+				for method in ['FGSM', 'PGD']:
+					downs = Downstreams(data, attr, method)
+					downs.distribution(ax, offset=0 if method=='FGSM' else 6+1)
+				
+				ax.set_xticks(list(range(0,13)))
+				ax.set_xticklabels(
+					['S-Race','S-Race','M-Race','M-Race','W-Race','W-Race','','S-Gender','S-Gender','M-Gender','M-Gender','W-Gender','W-Gender'],
+					rotation = 45,
+					ha='right'
+				)
+				fig.tight_layout()
+				plt.show()
+				exit()
 
-	# for data in ['hospital']:
-	# 	for attr in ['race', 'sex']:
-	# 		for method in ['PGD', 'FGSM']:
-	# 			print(data, attr, method)
-	# 			downs = Downstreams(data, attr, method)
-	# 			result = downs.run()
-	# 			f=open(f'./result/predata/{data}_{attr}_{method}.res','w')
-	# 			f.write(str(result))
-	# 			f.close()
+	if action =='run':
+		for method in ['FGSM', 'PGD']:
+			for data in ['adult','compas','hospital']:
+				for attr in ['race', 'sex']:
+					print(data, attr, method)
+					downs = Downstreams(data, attr, method)
+					result = downs.run()
+					f=open(f'./result/predata/{data}_{attr}_{method}.res','w')
+					f.write(str(result))
+					f.close()
 

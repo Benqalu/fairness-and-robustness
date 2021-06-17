@@ -12,7 +12,7 @@ import tensorflow as tf
 from aif360.datasets import AdultDataset, CompasDataset
 from aif360.algorithms.preprocessing.reweighing import Reweighing
 from aif360.algorithms.inprocessing import PrejudiceRemover
-from ExistingApproaches.disparate_impact_remover import DisparateImpactRemover
+from aif360.algorithms.preprocessing import DisparateImpactRemover
 
 from TorchAdversarial import TorchAdversarial
 from metric import Metric
@@ -175,7 +175,7 @@ if __name__=='__main__':
 		method = 'FGSM'
 		func = fairness_disparate
 		wF = 0.0
-		wR = 0.0
+		wR = 0.1
 		seed = 24
 
 
@@ -197,7 +197,7 @@ if __name__=='__main__':
 		'wF':wF,
 	}
 
-	f=open('./result/existings/FnR.txt','a')
-	f.write(json.dumps(report)+'\n')
-	f.close()
+	# f=open('./result/existings/FnR.txt','a')
+	# f.write(json.dumps(report)+'\n')
+	# f.close()
 

@@ -132,7 +132,7 @@ class PreProcFlip(object):
 				X_ = (X_ + noise).detach().requires_grad_(True)
 			return X_.detach()
 
-	def fit_transform(self, test_output=True):
+	def fit_transform(self, test_output=True, save=False):
 
 		judgement_set = "train"
 
@@ -412,6 +412,29 @@ class PreProcFlip(object):
 			):
 				break
 
+		if save:
+
+			if self._train["X_adv"] is not None:
+				X_train = torch.vstack(
+					[self._train["X"], self._train["X_adv"]]
+				).detach()
+				y_train = torch.vstack(
+					[self._train["y"], self._train["y"][chosen_R]]
+				).detach()
+			else:
+				X_train = self._train["X"].detach()
+				y_train = self._train["y"].detach()
+
+			downstream_train ={
+				'X': X_train.detach(),
+				'y': y_train.detach(),
+				's': self._train['s'],
+				'idx': chosen_R
+			}
+
+			res['downstream_train'] = self._downstream_train
+			res['downstream_test'] = self._test
+
 		return res
 
 
@@ -472,6 +495,8 @@ if __name__ == "__main__":
 		dF = round(float(sys.argv[4]), 2)
 		dR = round(float(sys.argv[5]), 2)
 		k = 0.003
+		if len(sys.argv>6) and sys.argv[6].strip()=='save':
+			saveflag=True
 	else:
 		data = "adult"
 		attr = "race"
@@ -479,6 +504,7 @@ if __name__ == "__main__":
 		dF = 0.02
 		dR = 0.50
 		k = 0.003
+		saveflag=False
 
 	import time
 
@@ -489,7 +515,7 @@ if __name__ == "__main__":
 	model = PreProcFlip(
 		data, attr, method=method, k=k, max_iter=1000, seed=seed, dR=dR, dF=dF
 	)
-	res = model.fit_transform()
+	res = model.fit_transform(save=saveflag)
 
 	res["data"] = data
 	res["attr"] = attr
@@ -499,8 +525,17 @@ if __name__ == "__main__":
 	res["k"] = k
 	res["seed"] = seed
 
-	import json
+	if saveflag:
 
-	f = open(f"./result/preproc/FnR.txt", "a")
-	f.write(json.dumps(res) + "\n")
-	f.close()
+		import pickle
+
+		with open('./result/predata/'+f'{data}_{attr}_{method}_{seed}.pre', 'wb') as handle:
+			pickle.dump(res, handle)
+
+	else:
+
+		import json
+
+		f = open(f"./result/preproc/FnR.txt", "a")
+		f.write(json.dumps(res) + "\n")
+		f.close()
