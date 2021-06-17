@@ -10,7 +10,7 @@
 	- ** In a word, the implementation part can be ignored unless there are some erros, and the execution sequence is: (1) Run batching scripts; and (2) Run result scripts and get the result. **
 
 
-## Existing Approaches (Figure 2)
+## Existing Approaches (Figure 2 & Figure 8)
 
 - Implementation: ``ExistingCombosFnR.py``
 - Batching script: ``exec_ExistingCombosFnR.py``
@@ -22,8 +22,45 @@
 - Batching script: ``exec_InProcess.py``
 - Result script: ``./result/inproc/parse_Heatmap.py``
 
-## Angle of in-processing gradient (Figure 4)
+## Angle of in-processing gradient (Figure 4 & Figure 9)
 
 - Implementation: ``InProcess.py``
 - Batching script: ``exec_InProcess.py``
 - Result script: ``./result/inproc/parse_Angle.py``, the output contains three lines and need to be filled in the pgfplot script in corrseponding ``.tex`` file in the paper source.
+
+## Heatmap of pre-processing (Figure 5 & Figure 10)
+
+- Implementation: ``PreProcessOld.py`` for the old version, and ``PreProcessInflu.py`` for the new version with influence function on robustness as well
+- Batching script: ``exec_PreProcess.py``
+- Result script: ``./result/preproc/parse_Heatmap.py``
+
+## Downstream models (Figure 6 & Figure 11)
+
+- Implementation: 
+	- ``PreProcessOld.py`` for the old version, and ``PreProcessInflu.py`` for the new version with influence function on robustness as well. Need to turn the argv ``saveflag`` to ``True``. This is to generate pre-processed data;
+	- ``PreProcessDownstreams.py`` for running pre-set models and get the result.
+- Batching script: ``exec_PreProcGen.py``
+- Result script: ``./result/preproc/parse_Figures.py``
+
+## Compare pre- and in-processing (Figure 7 & Figure 12)
+
+- Implementation: N/A, you need to get the result of pre- and in-processing first;
+- Batching script: N/A
+- Result script: The result script of pre- and in-processing will automatically generate the heatmap data in ``./result/preindiff/``, so after the generation, run ``./result/preindiff/draw_diff.py``
+
+## Original fairness & robustness (Table 2)
+
+You can get the result from the result of existing approaches, just let the fairness and robustness requiremnt to be 0, and the result will be original.
+
+## Fairness on robustenss (Table 3)
+
+- Implementation: ``ExistingCombosFnR.py``
+- Batching script: ``exec_ExistingCombosFnR.py``
+- Result script: ``./result/existings/parse_F2R.py``
+
+## Robustness on fairness (Table 4)
+
+- Implementation: ``ExistingCombosFnR.py``
+- Batching script: ``exec_ExistingCombosFnR.py``
+- Result script: ``./result/existings/parse_R2F.py``
+

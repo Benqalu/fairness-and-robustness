@@ -65,19 +65,6 @@ config = {
 
 def Generate(n=20):
 
-	# executed = {}
-	# for item in config:
-	# 	if item not in executed:
-	# 		executed[item] = n
-
-	# fnames = os.listdir('./result/predata/')
-	# for fname in fnames:
-	# 	item = fname.split('.')[0].split('_')
-	# 	data = item[0]
-	# 	attr = item[1]
-	# 	method = item[2]
-	# 	executed[(data,attr,method)] -= 1
-
 	for t in range(0,n):
 		for data, attr, method in config:
 			if data != 'hospital':
@@ -85,41 +72,41 @@ def Generate(n=20):
 			for item in config[(data, attr, method)]:
 				wF, wR = item[0], item[1]
 				os.system(
-					"python PreProcessGen.py %s %s %s %.3f %.3f"
+					"python PreProcessInflu.py %s %s %s %.3f %.3f save"
 					% (data, attr, method, wF, wR)
 				)
 
-def Downstreams():
-	import pickle
-	from PreProcessGen import PreProcFlip
+# def Downstreams(data='compas'):
+# 	import pickle
+# 	from PreProcessGen import PreProcFlip
 
-	fnames = []
-	for fname in sorted(os.listdir('./result/predata/')):
-		if '.pre' not in fname:
-			continue
-		item = fname.split('.')[0].split('_')
-		data = item[0]
-		if data != 'hospital':
-			continue
-		attr = item[1]
-		method = item[2]
-		seed = int(item[3])
-		fnames.append((seed, data, attr, method))
-	fnames.sort()
+# 	fnames = []
+# 	for fname in sorted(os.listdir('./result/predata/')):
+# 		if '.pre' not in fname:
+# 			continue
+# 		item = fname.split('.')[0].split('_')
+# 		data = item[0]
+# 		if data != data:
+# 			continue
+# 		attr = item[1]
+# 		method = item[2]
+# 		seed = int(item[3])
+# 		fnames.append((seed, data, attr, method))
+# 	fnames.sort()
 
-	for fname in fnames:
-		model = PreProcFlip(fname[1], fname[2], k=0.003, method=fname[3], max_iter=1000, seed=seed, dR=0.0, dF=0.0)
-		fname = f'{fname[1]}_{fname[2]}_{fname[3]}_{fname[0]}.pre'
-		res = model.downstreams(loadfrom=fname)
-		print(fname)
-		for item in res:
-			for jtem in item:
-				print(round(jtem,4),end='\t')
-			print()
-		print()
+# 	for fname in fnames:
+# 		model = PreProcFlip(fname[1], fname[2], k=0.003, method=fname[3], max_iter=1000, seed=seed, dR=0.0, dF=0.0)
+# 		fname = f'{fname[1]}_{fname[2]}_{fname[3]}_{fname[0]}.pre'
+# 		res = model.downstreams(loadfrom=fname)
+# 		print(fname)
+# 		for item in res:
+# 			for jtem in item:
+# 				print(round(jtem,4),end='\t')
+# 			print()
+# 		print()
 
-# Generate(n=20)
-Downstreams()
+Generate(n=20)
+# Downstreams()
 
 
 
