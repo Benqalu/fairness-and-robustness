@@ -36,10 +36,8 @@
 
 ## Downstream models (Figure 6 & Figure 11)
 
-- Implementation: 
-	- ``PreProcessOld.py`` for the old version, and ``PreProcessInflu.py`` for the new version with influence function on robustness as well. Need to turn the argv ``saveflag`` to ``True``. This is to generate pre-processed data;
-	- ``PreProcessDownstreams.py`` for running pre-set models and get the result.
-- Batching script: ``exec_PreProcGen.py``
+- Implementation: ``PreProcessOld.py`` for the old version, and ``PreProcessInflu.py`` for the new version with influence function on robustness as well. Need to turn the argv ``saveflag`` to ``True``. This is to generate pre-processed data;
+- Batching script: ``exec_PreProcGen.py`` for generating all data, and ``PreProcessDownstreams.py`` for running pre-set models, get the result and store the result for different downstream models in files
 - Result script: ``./result/preproc/parse_Figures.py``
 
 ## Compare pre- and in-processing (Figure 7 & Figure 12)
