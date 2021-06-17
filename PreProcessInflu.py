@@ -425,15 +425,15 @@ class PreProcFlip(object):
 				X_train = self._train["X"].detach()
 				y_train = self._train["y"].detach()
 
-			downstream_train ={
-				'X': X_train.detach(),
-				'y': y_train.detach(),
-				's': self._train['s'],
-				'idx': chosen_R
+			downstream_train = {
+				"X": X_train.detach(),
+				"y": y_train.detach(),
+				"s": self._train["s"],
+				"idx": chosen_R,
 			}
 
-			res['downstream_train'] = self._downstream_train
-			res['downstream_test'] = self._test
+			res["downstream_train"] = self._downstream_train
+			res["downstream_test"] = self._test
 
 		return res
 
@@ -495,8 +495,8 @@ if __name__ == "__main__":
 		dF = round(float(sys.argv[4]), 2)
 		dR = round(float(sys.argv[5]), 2)
 		k = 0.003
-		if len(sys.argv>6) and sys.argv[6].strip()=='save':
-			saveflag=True
+		if len(sys.argv > 6) and sys.argv[6].strip() == "save":
+			saveflag = True
 	else:
 		data = "adult"
 		attr = "race"
@@ -504,7 +504,7 @@ if __name__ == "__main__":
 		dF = 0.02
 		dR = 0.50
 		k = 0.003
-		saveflag=False
+		saveflag = False
 
 	import time
 
@@ -529,7 +529,9 @@ if __name__ == "__main__":
 
 		import pickle
 
-		with open('./result/predata/'+f'{data}_{attr}_{method}_{seed}.pre', 'wb') as handle:
+		with open(
+			"./result/predata/" + f"{data}_{attr}_{method}_{seed}.pre", "wb"
+		) as handle:
 			pickle.dump(res, handle)
 
 	else:
