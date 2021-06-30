@@ -3,7 +3,3 @@ __pycache__/
 result/**/*.pdf
 .DS_Store
 *.py[cod]
-*.pre
-*.txt
-*.gz
-*.res
