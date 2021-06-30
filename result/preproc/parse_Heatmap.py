@@ -66,10 +66,7 @@ def draw(data, attr, method):
 	if len(res)!=400:
 		print(f'{data}_{attr}_{method} Data incomplete, nothing was done.')
 		return
-
-	worst_acc = 1.0
-	wrost_case = None
-
+		
 	Fs = []
 	Rs = []
 	As = []
@@ -79,13 +76,6 @@ def draw(data, attr, method):
 		As.append(res[param][0])
 		Rs.append(res[param][1])
 		Fs.append(res[param][2])
-
-		if res[param][0]<worst_acc:
-			worst_acc=res[param][0]
-			wrost_case=res[param]
-	print(worst_acc)
-	print(wrost_case)
-	exit()
 
 	mapdata = {
 		'A':As,
@@ -169,7 +159,4 @@ if __name__=='__main__':
 	for data in ['adult','compas','hospital']:
 		for attr in ['race', 'sex']:
 			for method in ['FGSM', 'PGD']:
-				try:
-					draw(data, attr, method)
-				except:
-					pass
+				draw(data, attr, method)
