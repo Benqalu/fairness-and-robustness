@@ -33,7 +33,7 @@ def angle(data, attr, method, wR, wF):
 			print((epochs[i], res[param][i]),end=' ')
 		print()
 
-angle('adult', 'race', 'FGSM', 0.1, 0.4)
+angle('adult', 'sex', 'FGSM', 0.1, 0.3)
 
 
 

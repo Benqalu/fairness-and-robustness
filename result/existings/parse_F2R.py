@@ -35,7 +35,7 @@ for row in f:
 	count[setting][fairness_list.index((wF, func))]+=1
 f.close()
 
-print(count)
+# print(count)
 
 for item in res:
 	for j in range(0,len(res[item])):

@@ -501,10 +501,10 @@ if __name__ == "__main__":
 		data = "adult"
 		attr = "race"
 		method = "FGSM"
-		dF = 0.02
-		dR = 0.50
+		dF = 0.6
+		dR = 0.30
 		k = 0.003
-		saveflag = False
+		saveflag = True
 
 	import time
 

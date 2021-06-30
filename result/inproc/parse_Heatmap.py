@@ -52,10 +52,6 @@ def draw(data, attr, method):
 			res[param]['count']+=1
 		f.close()
 
-	plain_acc = 0.0
-	worst_acc = 1.0
-	wrost_case = None
-
 	Fs = []
 	Rs = []
 	As = []
@@ -64,15 +60,6 @@ def draw(data, attr, method):
 		As.append(res[param][0])
 		Rs.append(res[param][1])
 		Fs.append(res[param][2])
-
-		if param==(0,0):
-			plain_acc=res[param][0]
-		if res[param][0]<worst_acc:
-			worst_acc=res[param][0]
-			wrost_case = tuple(res[param].tolist())
-	print(plain_acc, worst_acc, plain_acc-worst_acc)
-	print(wrost_case)
-	exit()
 
 	mapdata = {
 		'A':As,
@@ -164,7 +151,7 @@ if __name__=='__main__':
 	for data in ['adult','compas','hospital']:
 		for attr in ['race', 'sex']:
 			for method in ['FGSM', 'PGD']:
-				try:
-					draw(data, attr, method)
-				except:
-					pass
+				# try:
+				draw(data, attr, method)
+				# except:
+				# 	pass

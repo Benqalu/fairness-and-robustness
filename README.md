@@ -3,6 +3,7 @@
 ## General notes (**important**):
 - All codes are implemented in Python 3.7.9 with PyTorch 1.7.1;
 - Due to further change to the paper, for all codes below, the corresponding experiment is referred to "paper.pdf" in current directory as a snapshot;
+- For new dataset: Generate .csv file, split to training and testing dataset, and add to ``./data/`` folder, for all .csv file, label must be the last column;
 - All experimental scripts are divide into 3 code blocks:
 	- Implementation: The code that implements the experiment with specific algorithm, these script takes arguments of a single setting from command line and only execute and output the result for that setting. For example ``python InProcess.py adult race FGSM 0.1 0.4`` will execute in-processing algorithm with adult as the dataset, race as the senstive attribute, FGSM as the robustness against, lambda_R=0.1 and lambda_F=0.4.
 	- Batching script: These scripts has prefix ``exec_``, e.g., ``exec_InProcess.py``, which are used to enmuerate all settings for the implementation to execute. The scripts can resume the progress, i.e., it can automatically detect which settings have been exeucted, skip them and start from the next uncalulated setting.
@@ -26,7 +27,7 @@
 
 - Implementation: ``InProcess.py``
 - Batching script: ``exec_InProcess.py``
-- Result script: ``./result/inproc/parse_Angle.py``, the output contains three lines and need to be filled in the pgfplot script in corrseponding ``.tex`` file in the paper source.
+- Result script: ``./result/inproc/parse_Angle.py``, the output contains one line and need to be filled in the pgfplot script in corrseponding ``.tex`` file in the paper source.
 
 ## Heatmap of pre-processing (Figure 5 & Figure 10)
 
@@ -42,13 +43,16 @@
 
 ## Compare pre- and in-processing (Figure 7 & Figure 12)
 
-- Implementation: N/A, you need to get the result of pre- and in-processing first;
+- Implementation: N/A, you need to get the result of pre- and in-processing first by running the heatmap parsing script of pre- and in-processing ``./result/preproc/parse_Heatmap.py`` and ``./result/inproc/parse_Heatmap.py``. After running these heatmap scripts, the data in those heatmap will be autommatically saved to ``./result/preindiff/`` folder as a ``.txt`` file;
 - Batching script: N/A
 - Result script: The result script of pre- and in-processing will automatically generate the heatmap data in ``./result/preindiff/``, so after the generation, run ``./result/preindiff/draw_diff.py``
 
 ## Original fairness & robustness (Table 2)
 
-You can get the result from the result of existing approaches, just let the fairness and robustness requiremnt to be 0, and the result will be original.
+- Implementation: ``ExistingCombosFnR.py``
+- Batching script: ``exec_ExistingCombosFnR.py``
+
+You can get the result from the result of existing approaches, just set wF=0 and wR=0, and the result will be original.
 
 ## Fairness on robustenss (Table 3)
 
@@ -56,9 +60,13 @@ You can get the result from the result of existing approaches, just let the fair
 - Batching script: ``exec_ExistingCombosFnR.py``
 - Result script: ``./result/existings/parse_F2R.py``
 
+You can get the result from the result of existing approaches, just compare the robustness score (but keep wR=0) of the setting with specific fairness wF parameter with original setting (wF=0 and wR=0).
+
 ## Robustness on fairness (Table 4)
 
 - Implementation: ``ExistingCombosFnR.py``
 - Batching script: ``exec_ExistingCombosFnR.py``
 - Result script: ``./result/existings/parse_R2F.py``
+
+You can get the result from the result of existing approaches, just compare the fairness score (but keep wF=0) of the setting with specific robustness wR parameter with original setting (wF=0 and wR=0).
 

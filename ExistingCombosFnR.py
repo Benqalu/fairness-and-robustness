@@ -132,23 +132,28 @@ def fairness_reweighing(data, attr, method='FGSM', wF=0.0, wR=0.0):
 def fairness_disparate(data, attr, method='FGSM', mitigation=True, wF=1.0, wR=0.0):
 
 	data_train, data_test, privileged_groups, unprivileged_groups = load_data(data,attr)
-	
-	X_test,s_test,y_test,_=get_Xsy(data_test,attr,del_s=True)
 
 	if wF==0.0 or wF is None:
 		X,s,y,weight=get_Xsy(data_train,attr,del_s=True)
 	else:
 		preproc = DisparateImpactRemover(repair_level=wF,sensitive_attribute=attr)
 		data_train_proc = preproc.fit_transform(data_train)
+		# data_test_proc = preproc.fit_transform(data_test)
 		X,s,y,weight=get_Xsy(data_train_proc,attr,del_s=True)
+		X_test,s_test,y_test,_=get_Xsy(data_test,attr,del_s=True)
 
 	model = TorchAdversarial(lr=0.01, n_epoch=500, method=method, hiddens=[128], seed=global_seed)
 	model.fit(X,y,s,weight,wR=wR)
 
+	train_res = model.metrics(X=X,y=y,s=s)
+	test_res = model.metrics(X=X_test,y=y_test,s=s_test)
+	test_adv_res = model.metrics_attack(X=X_test,y=y_test,s=s_test,method=method,use_y=False)
+
+
 	report={
-		'train':model.metrics(X=X,y=y,s=s),
-		'test':model.metrics(X=X_test,y=y_test,s=s_test),
-		'test_adv':model.metrics_attack(X=X_test,y=y_test,s=s_test,method=method,use_y=False),
+		'train':train_res,
+		'test':test_res,
+		'test_adv':test_adv_res,
 	}
 	# print('Training Acc.:', train_acc)
 	# print('Testing Acc.:', test_acc)
@@ -170,12 +175,12 @@ if __name__=='__main__':
 		seed = int(time.time())
 		print('Seed is %d.'%seed)
 	else:
-		data = 'compas'
+		data = 'adult'
 		attr = 'sex'
 		method = 'FGSM'
 		func = fairness_disparate
-		wF = 0.0
-		wR = 0.1
+		wF = 1.0
+		wR = 0.2
 		seed = 24
 
 
@@ -197,7 +202,7 @@ if __name__=='__main__':
 		'wF':wF,
 	}
 
-	# f=open('./result/existings/FnR.txt','a')
-	# f.write(json.dumps(report)+'\n')
-	# f.close()
+	f=open('./result/existings/FnR.txt','a')
+	f.write(json.dumps(report)+'\n')
+	f.close()
 

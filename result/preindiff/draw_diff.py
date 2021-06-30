@@ -53,7 +53,7 @@ def draw(data, attr, method):
 				only[i][j]=np.nan
 	
 	# only*=0.9
-	diff*=
+	# diff*=
 
 	# fig, ax = plt.subplots()
 	plt.pcolormesh(rr_.ravel(), ff_.ravel(), diff, cmap='PRGn', vmin=-1, vmax=1)

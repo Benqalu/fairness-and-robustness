@@ -49,7 +49,7 @@ for item in res:
 		for j in range(0,len(res[item][method])):
 			res[item][method][j]/=count[item][method][j]
 
-print(res)
+# print(res)
 
 
 for item in res:

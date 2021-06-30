@@ -44,14 +44,14 @@ def run(data, attr, method):
 
 	robustness_list = [0.0, 0.01, 0.05, 0.1, 0.5, 1.0]
 
-	for ftem in fairness_list:
-		for rtem in robustness_list:
-			param = (rtem, ftem[0], ftem[1])
-			A = res[param][0]
-			R = 1.0-res[param][1]
-			F = res[param][2]
-			print('(%.04f, %.04f, %.04f)'%(A,R,F),end='\t')
-		print()
+	# for ftem in fairness_list:
+	# 	for rtem in robustness_list:
+	# 		param = (rtem, ftem[0], ftem[1])
+	# 		A = res[param][0]
+	# 		R = 1.0-res[param][1]
+	# 		F = res[param][2]
+	# 		print('(%.04f, %.04f, %.04f)'%(A,R,F),end='\t')
+	# 	print()
 
 	for ftem in fairness_list:
 		for rtem in robustness_list:

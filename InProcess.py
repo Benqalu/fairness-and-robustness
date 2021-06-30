@@ -223,11 +223,7 @@ def experiments(data, attr, method="FGSM", wR=0.0, wF=0.0, seed=None, suffix="")
 	report["wF"] = wF
 	report["seed"] = seed
 
-	# print(report)
-
-	# print(model.metrics_attack(test['X'], test['y'], test['s']))
-
-	# print(report)
+	print(report)
 
 	f = gzip.open(f"./result/inproc/RnF_{suffix}.txt.gz", "at")
 	f.write(json.dumps(report) + "\n")
@@ -247,7 +243,7 @@ if __name__ == "__main__":
 	else:
 		data = "compas"
 		attr = "race"
-		method = "PGD"
+		method = "FGSM"
 		wR = 0.0
 		wF = 0.0
 		suffix = ""
