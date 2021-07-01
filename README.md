@@ -1,7 +1,10 @@
 # Code for paper "Towards Fair and Robust Classification"
 
 ## General notes (**important**):
-- All codes are implemented in Python 3.7.9 with PyTorch 1.7.1;
+- Environments and additional packages:
+	- Python 3.7.9
+	- PyTorch
+	- AIF360
 - Due to further change to the paper, for all codes below, the corresponding experiment is referred to "paper.pdf" in current directory as a snapshot;
 - About datasets:
 	- Datasets are stored in ``./data/`` folder;
