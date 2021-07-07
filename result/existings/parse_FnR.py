@@ -26,10 +26,7 @@ def run(data, attr, method):
 				'data': np.zeros(3),
 				'count': 0
 			}
-		if wF == 0.0 or func == 'fairness_reweighing':
-			res[param]['data']+=np.array([obj['result']['test'][0], obj['result']['test_adv'][0], obj['result']['test'][1]])
-		else:
-			res[param]['data']+=np.array([obj['result']['test'][0], obj['result']['test_adv'][0], (1-wR)*obj['result']['train'][1] + 0.6*wR * obj['result']['test'][1]])
+		res[param]['data']+=np.array([obj['result']['test'][0], obj['result']['test_adv'][0], obj['result']['test'][1]])
 		res[param]['count']+=1
 	f.close()
 
